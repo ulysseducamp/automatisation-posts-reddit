@@ -14,20 +14,25 @@ Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentiss
    ├─ Image 1 (capture d'écran avec sous-titres)
    └─ Image 2 (capture d'écran avec sous-titres)
 
-2. Extraction OCR (OpenAI Vision API - GPT-4o-mini)
+2. Extraction OCR (OpenAI Vision API - GPT-4o-mini) - 1 fois
    ├─ Image 1 → Texte français extrait
    └─ Image 2 → Texte français extrait
 
-3. Traduction (OpenAI - GPT-4o-mini)
+3. Traduction (OpenAI - GPT-4o-mini) - 1 fois
    ├─ Texte 1 → Traduction anglaise littérale
    └─ Texte 2 → Traduction anglaise littérale
 
-4. Génération explication (OpenAI - GPT-4o-mini)
+4. Génération explication (OpenAI - GPT-4o-mini) - 1 fois
    └─ Expression OU Mot → Explication pédagogique en anglais
       (prompt adapté selon le type)
 
-5. Output
-   └─ Fichier HTML avec layout complet
+5. Génération multi-subreddit - 3 fois
+   ├─ Sélection de 3 PS aléatoires différents
+   ├─ Création de 3 liens Ablink uniques (API)
+   └─ Génération de 3 fichiers HTML (1 par subreddit)
+
+6. Output
+   └─ 3 fichiers HTML : {expression}-{date}-r-{subreddit}.html
 ```
 
 ## Fichiers du projet
@@ -40,22 +45,25 @@ Script principal contenant toute la logique :
 - `extract_subtitle_from_image(image_path)` : OCR via OpenAI Vision
 - `translate_subtitle(subtitle_french)` : Traduction FR → EN
 - `generate_explanation(text, is_expression=True)` : Génère explication pédagogique (adapte le prompt selon le type)
+- `create_short_link(title)` : Crée lien raccourci via API Ablink
 - `generate_html(...)` : Crée le HTML final avec CSS
-- `main()` : Orchestration du workflow complet
+- `main()` : Orchestration du workflow complet (génère 3 fichiers par exécution)
 
 ### `requirements.txt`
 Dépendances Python :
 - `openai>=1.0.0` : SDK OpenAI pour Vision API et traductions
 - `python-dotenv>=1.0.0` : Gestion des variables d'environnement
+- `requests>=2.31.0` : Appels HTTP pour API Ablink
 
 ### `.env` (non versionné)
-Contient la clé API OpenAI :
+Contient les clés API :
 ```
 OPENAI_API_KEY=sk-proj-...
+ABLINK_API_KEY=...
 ```
 
 ### `.env.example`
-Template pour la configuration. À copier en `.env` et remplir avec la vraie clé API.
+Template pour la configuration. À copier en `.env` et remplir avec les vraies clés API.
 
 ### `README.md`
 Documentation utilisateur avec instructions d'installation et d'utilisation.
@@ -127,7 +135,11 @@ User: Prompt simplifié incluant :
 6. **Footer** (Fira Mono 34px, fond gris #e0e0e0)
    - Texte : "(Open the post to reveal the explanation)"
 
-7. **Explication** (Inter 16px, fond blanc, texte noir, aligné à gauche)
+7. **Explication + PS + Lien + Subreddit** (Inter 16px, fond blanc, texte noir, aligné à gauche)
+   - Explication pédagogique
+   - PS promotionnel (choisi aléatoirement, différent pour chaque subreddit)
+   - Lien raccourci Ablink unique
+   - Nom du subreddit (pour identification)
 
 ### Polices utilisées
 - **Fira Mono** (Regular 400) : Titre et footer
@@ -168,10 +180,17 @@ python3 generate.py \
 **Note :** Les arguments `--expression` et `--mot` sont mutuellement exclusifs (il faut utiliser l'un OU l'autre).
 
 ### Output
-Fichier HTML nommé : `{text-slug}-{date}.html`
-Exemples :
-- `en-deplacement-2025-12-29.html`
-- `manger-2025-12-29.html`
+**3 fichiers HTML** générés par commande, format : `{text-slug}-{date}-r-{subreddit}.html`
+
+Exemples pour `--expression "en déplacement"` :
+- `en-deplacement-2025-12-30-r-frenchimmersion.html`
+- `en-deplacement-2025-12-30-r-learningfrench.html`
+- `en-deplacement-2025-12-30-r-learnfrench.html`
+
+Chaque fichier contient :
+- Même explication/traductions/OCR
+- PS différent (3 PS aléatoires sans répétition)
+- Lien Ablink unique (titre: "{expression} - r/{subreddit}")
 
 ## Gestion d'erreurs
 
@@ -181,59 +200,60 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 - Échec de l'API OpenAI (rate limit, erreur réseau, etc.)
 - Aucun texte détecté par l'OCR
 
-## Coûts estimés (OpenAI)
+**Gestion gracieuse pour API Ablink :** Si l'API échoue, affiche "Error: Unable to generate link" au lieu du lien, mais continue la génération du HTML.
 
-Pour un post complet :
+## Coûts estimés
+
+**Par génération (3 fichiers HTML) :**
 - 2 appels Vision API (OCR) : ~$0.0003
 - 2 appels traduction : ~$0.0001
 - 1 appel explication : ~$0.0001
+- 3 appels API Ablink : gratuit
 
-**Total par post : ~$0.0005** (moins d'un centime)
+**Total : ~$0.0005** (moins d'un centime pour 3 posts)
 
 ## Fichiers exclus du repo (.gitignore)
 
-- `.env` : Contient la clé API secrète
+- `.env` : Contient les clés API (OpenAI + Ablink)
 - `*.html` : Fichiers HTML générés
 - `test_*.png` : Images de test
 - `__pycache__/` : Cache Python
 - `.DS_Store` : Fichiers macOS
 
+## Subreddits cibles
+
+3 subreddits configurés (génération automatique de 3 fichiers HTML) :
+- `r/FrenchImmersion`
+- `r/learningfrench`
+- `r/learnfrench`
+
 ## Évolutions futures possibles
 
-### V1 (actuelle)
-- OCR avec OpenAI Vision
-- Traduction automatique
-- Génération d'explication
-
-### Idées pour versions futures
+### Idées
 - [ ] Mode batch : traiter plusieurs expressions d'un coup
-- [ ] Amélioration des prompts pour plus de déterminisme
 - [ ] Export direct en PNG (screenshot automatique du HTML)
-- [ ] Support de plusieurs langues cibles (pas seulement anglais)
-- [ ] Interface CLI interactive (choix des images, preview, etc.)
+- [ ] Support de plusieurs langues cibles
+- [ ] Interface CLI interactive
 - [ ] Validation automatique de la qualité de l'OCR
-- [ ] Système de templates personnalisables (couleurs, polices, etc.)
 
 ## Notes de développement
 
 ### Historique des versions
 - **V1** : Génération HTML manuelle avec traductions manuelles
 - **V2** : Ajout traduction automatique via OpenAI
-- **V3** : Remplacement Tesseract par OpenAI Vision (plus fiable)
-- **V3.1** : Ajout génération automatique des explications
-- **V4** : Amélioration des prompts avec temperature=0 + différenciation expressions/mots
-  - Prompt de traduction amélioré avec exemple concret pour traductions littérales
-  - Deux prompts d'explication distincts (un pour les expressions, un pour les mots)
-  - Arguments CLI mutuellement exclusifs `--expression` et `--mot`
+- **V3** : Remplacement Tesseract par OpenAI Vision
+- **V3.1** : Génération automatique des explications
+- **V4** : Temperature=0 + différenciation expressions/mots + prompts optimisés
+- **V5** : Génération multi-subreddit (3 fichiers) + intégration API Ablink pour liens uniques + PS aléatoires
 
 ### Choix techniques importants
-- **OpenAI Vision plutôt que Tesseract** : Meilleure gestion des sous-titres stylisés (ombres, contours)
-- **GPT-4o-mini plutôt que GPT-4o** : 100x moins cher, qualité suffisante pour cette tâche
-- **Deux appels séparés (OCR + traduction)** : Meilleur débogage et fiabilité vs un seul appel combiné
-- **HTML avec liens locaux plutôt que base64** : Plus simple pour développement, screenshot manuel de toute façon
-- **Temperature=0 pour tous les prompts** : Résultats déterministes et consistants
-- **Prompts avec exemples** : Meilleure qualité de traduction (exemple-based learning)
-- **Deux prompts d'explication séparés** : Adaptés aux besoins spécifiques (expressions vs mots simples)
+- **OpenAI Vision plutôt que Tesseract** : Meilleure gestion des sous-titres stylisés
+- **GPT-4o-mini plutôt que GPT-4o** : 100x moins cher, qualité suffisante
+- **Temperature=0** : Résultats déterministes et consistants
+- **3 fichiers HTML par génération** : Anti-ban Reddit (liens + PS différents par subreddit)
+- **API Ablink** : Tracking des performances + liens uniques
+- **9 variations de PS** : Sélection aléatoire de 3 différents pour maximiser la variété
+- **Gestion d'erreur gracieuse pour Ablink** : Continue sans lien si API échoue
 
 ## Support et maintenance
 

@@ -10,11 +10,26 @@ import re
 import os
 import sys
 import base64
+import random
+import requests
 from openai import OpenAI
 from dotenv import load_dotenv
 
 # Charger les variables d'environnement depuis .env
 load_dotenv()
+
+# Variations de post-scriptum promotionnel (choisi aléatoirement)
+PS_VARIATIONS = [
+    "PS: If you watch Netflix on your computer and want to support this post, you can check this tool that I made.",
+    "PS: If you like watching Netflix and you sometimes hesitate between putting the subtitles in French or in your native language, I made a little tool that solves this problem",
+    "PS: if you like to watch French content on Netflix and if you sometimes hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that adjusts the subtitles to your level. If you want to support this post and if you think that this tool could be useful, feel free give it a try ;)",
+    "PS: if you like to watch French content on Netflix and if you sometime hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that I would recommend to use. This extension adjusts the subtitles to your level (if a subtitle is adapted to your level, it displays it in French, if a subtitle is too hard, it displays it in your native language). I use it to learn Portuguese, it provides a good balance between practicing your target language and enjoying the show",
+    "How to support these posts: check out this tool that I made to learn French with Netflix.",
+    "Want to support my posts? I made a small Netflix tool that switches subtitles between French and your native language depending on difficulty",
+    "If you want to improve your French while watching Netflix, here is a tool I made that decide if a subtitle should be displayed in French or in your Native language based on your level.",
+    "If you watch Netflix on your computer, I built a simple tool that shows subtitles in French only when the words are familiar to you, otherwise it switches to your native language.",
+    "PS: If you're a Netflix user, I made a tool that automatically chooses between French and native subtitles depending on the vocabulary you know."
+]
 
 
 def slugify(text):
@@ -198,7 +213,53 @@ Mot à expliquer : "{text}" """
         sys.exit(1)
 
 
-def generate_html(expression, image1_path, translation1, image2_path, translation2, explanation):
+def create_short_link(title):
+    """Crée un lien raccourci via l'API Ablink"""
+    # Vérifier que la clé API est configurée
+    api_key = os.getenv('ABLINK_API_KEY')
+    if not api_key:
+        print("⚠️  Attention : La clé API Ablink n'est pas configurée.")
+        print("   Le lien raccourci ne sera pas généré.")
+        return "Error: Unable to generate link (missing API key)"
+
+    try:
+        # Appeler l'API Ablink pour créer un lien raccourci
+        response = requests.post(
+            "https://ablink.io/api/links",
+            json={
+                "url": "https://subly-extension.vercel.app/landing",
+                "title": title
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
+            timeout=10
+        )
+
+        # Vérifier le status code
+        if response.status_code == 201 or response.status_code == 200:
+            data = response.json()
+            slug = data.get('slug')
+            if slug:
+                short_url = f"https://ablink.io/{slug}"
+                return short_url
+            else:
+                print("⚠️  Attention : Réponse API Ablink invalide (slug manquant)")
+                return "Error: Unable to generate link (invalid API response)"
+        else:
+            print(f"⚠️  Attention : Erreur API Ablink (status {response.status_code})")
+            return "Error: Unable to generate link (API error)"
+
+    except requests.exceptions.Timeout:
+        print("⚠️  Attention : Timeout lors de l'appel à l'API Ablink")
+        return "Error: Unable to generate link (timeout)"
+    except Exception as e:
+        print(f"⚠️  Attention : Erreur lors de la création du lien raccourci : {e}")
+        return "Error: Unable to generate link"
+
+
+def generate_html(expression, image1_path, translation1, image2_path, translation2, explanation, ps_text, short_link, subreddit_name):
     """Génère le HTML complet avec le template CSS"""
 
     html_template = f"""<!DOCTYPE html>
@@ -297,7 +358,12 @@ def generate_html(expression, image1_path, translation1, image2_path, translatio
 
         <div class="footer">(Open the post to reveal the explanation)</div>
 
-        <div class="explanation">{explanation}</div>
+        <div class="explanation">{explanation}
+
+{ps_text}
+{short_link}
+
+{subreddit_name}</div>
     </div>
 </body>
 </html>"""
@@ -357,27 +423,61 @@ def main():
     explanation = generate_explanation(text, is_expression=is_expression)
     print("✓ Explication générée")
 
-    # Générer le nom du fichier
+    # Sélectionner 3 post-scriptum aléatoires différents
+    ps_list = random.sample(PS_VARIATIONS, 3)
+
+    # Liste des subreddits
+    subreddits = [
+        ("r/FrenchImmersion", "r-frenchimmersion"),
+        ("r/learningfrench", "r-learningfrench"),
+        ("r/learnfrench", "r-learnfrench")
+    ]
+
+    # Générer le slug et la date pour les noms de fichiers
     text_slug = slugify(text)
     date_str = datetime.now().strftime('%Y-%m-%d')
-    output_filename = f"{text_slug}-{date_str}.html"
 
-    # Générer le HTML
-    html_content = generate_html(
-        text,
-        args.image1,
-        translation1,
-        args.image2,
-        translation2,
-        explanation
-    )
+    # Générer 3 fichiers HTML (un par subreddit)
+    generated_files = []
 
-    # Sauvegarder le fichier
-    with open(output_filename, 'w', encoding='utf-8') as f:
-        f.write(html_content)
+    for i, (subreddit_display, subreddit_slug) in enumerate(subreddits):
+        # Créer un lien raccourci unique pour ce subreddit
+        link_title = f"{text} - {subreddit_display}"
+        print(f"⏳ Création du lien pour {subreddit_display}...")
+        short_link = create_short_link(link_title)
 
-    print(f"✓ Fichier HTML généré : {output_filename}")
-    print(f"  Ouvre-le dans ton navigateur pour faire le screenshot!")
+        if short_link.startswith("Error:"):
+            print(f"⚠️  {short_link}")
+        else:
+            print(f"✓ Lien créé : {short_link}")
+
+        # Nom du fichier pour ce subreddit
+        output_filename = f"{text_slug}-{date_str}-{subreddit_slug}.html"
+
+        # Générer le HTML avec le PS correspondant
+        html_content = generate_html(
+            text,
+            args.image1,
+            translation1,
+            args.image2,
+            translation2,
+            explanation,
+            ps_list[i],  # PS différent pour chaque subreddit
+            short_link,
+            subreddit_display  # Nom du subreddit (avec r/)
+        )
+
+        # Sauvegarder le fichier
+        with open(output_filename, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+
+        generated_files.append(output_filename)
+
+    # Message de confirmation
+    print(f"\n✓ 3 fichiers HTML générés :")
+    for filename in generated_files:
+        print(f"  - {filename}")
+    print(f"\n  Ouvre-les dans ton navigateur pour faire les screenshots!")
 
 
 if __name__ == '__main__':
