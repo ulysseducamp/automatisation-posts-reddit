@@ -14,25 +14,29 @@ Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentiss
    ├─ Image 1 (capture d'écran avec sous-titres)
    └─ Image 2 (capture d'écran avec sous-titres)
 
-2. Extraction OCR (OpenAI Vision API - GPT-4o-mini) - 1 fois
+2. Extraction OCR (GPT-4o-mini) - 1 fois
    ├─ Image 1 → Texte français extrait
    └─ Image 2 → Texte français extrait
 
-3. Traduction (OpenAI - GPT-4o-mini) - 1 fois
+3. Traduction (GPT-4o-mini) - 1 fois
    ├─ Texte 1 → Traduction anglaise littérale
    └─ Texte 2 → Traduction anglaise littérale
 
-4. Génération explication (OpenAI - GPT-4o-mini) - 1 fois
-   └─ Expression OU Mot → Explication pédagogique en anglais
-      (prompt adapté selon le type)
+4. Cachage (GPT-4o) - 1 fois
+   ├─ Traduction 1 → Version cachée avec underscores
+   └─ Traduction 2 → Version cachée avec underscores
 
-5. Génération multi-subreddit - 3 fois
+5. Génération explication (GPT-4o-mini) - 1 fois
+   └─ Expression OU Mot → Explication pédagogique en anglais
+
+6. Génération multi-subreddit - 3 fois
    ├─ Sélection de 3 PS aléatoires différents
    ├─ Création de 3 liens Ablink uniques (API)
-   └─ Génération de 3 fichiers HTML (1 par subreddit)
+   └─ Génération de 3 fichiers HTML (1 par subreddit, 2 sections par fichier)
 
-6. Output
+7. Output
    └─ 3 fichiers HTML : {expression}-{date}-r-{subreddit}.html
+      Chaque fichier contient 2 sections : visible + cachée
 ```
 
 ## Fichiers du projet
@@ -42,12 +46,13 @@ Script principal contenant toute la logique :
 
 **Fonctions principales :**
 - `slugify(text)` : Convertit texte en slug pour noms de fichiers
-- `extract_subtitle_from_image(image_path)` : OCR via OpenAI Vision
-- `translate_subtitle(subtitle_french)` : Traduction FR → EN
-- `generate_explanation(text, is_expression=True)` : Génère explication pédagogique (adapte le prompt selon le type)
+- `extract_subtitle_from_image(image_path)` : OCR via OpenAI Vision (GPT-4o-mini)
+- `translate_subtitle(subtitle_french)` : Traduction FR → EN littérale (GPT-4o-mini)
+- `hide_text_in_translation(translation_en, subtitle_fr, text, is_expression)` : Cache mot/expression avec underscores (GPT-4o)
+- `generate_explanation(text, is_expression=True)` : Génère explication pédagogique (GPT-4o-mini)
 - `create_short_link(title)` : Crée lien raccourci via API Ablink
-- `generate_html(...)` : Crée le HTML final avec CSS
-- `main()` : Orchestration du workflow complet (génère 3 fichiers par exécution)
+- `generate_html(...)` : Crée HTML avec 2 sections (visible + cachée)
+- `main()` : Orchestration complète (génère 3 fichiers × 2 sections)
 
 ### `requirements.txt`
 Dépendances Python :
@@ -70,11 +75,9 @@ Documentation utilisateur avec instructions d'installation et d'utilisation.
 
 ## Configuration OpenAI
 
-### Modèle utilisé
-**GPT-4o-mini** pour toutes les opérations :
-- OCR (extraction de texte)
-- Traduction
-- Génération d'explications
+### Modèles utilisés
+- **GPT-4o-mini** : OCR, traduction, explication (économique)
+- **GPT-4o** : Cachage des traductions (précision requise)
 
 ### Prompts système
 
@@ -118,28 +121,38 @@ User: Prompt simplifié incluant :
 - Structure imposée : signification → exemples
 ```
 
+**Cachage (GPT-4o, temperature=0) :**
+```
+Prompt en 2 étapes :
+1. Reçoit : sous-titre FR + traduction EN + texte à cacher
+2. Identifie la partie EN correspondante au texte FR
+3. Remplace chaque lettre/espace par underscore "_"
+4. Renvoie uniquement la traduction avec underscores
+
+Exemples intégrés au prompt pour guidance (80% taux de succès)
+```
+
 ## Structure HTML générée
 
-### Layout
-1. **Titre** (Fira Mono 48px, fond gris #e0e0e0)
-   - Format : "What does "{expression}" mean here?"
+### Layout (2 sections par fichier)
 
-2. **Image 1** (max-width: 1124px)
+**Titre commun** (Fira Mono 48px, #e0e0e0)
 
-3. **Traduction 1** (Inter 34px, fond noir #212121, texte blanc)
+**Section 1 - Version visible :**
+- Images 1 & 2 (max-width: 1124px)
+- Traductions complètes (Inter 34px, #212121, texte blanc)
+- Footer "(Open the post to reveal the explanation)"
 
-4. **Image 2** (max-width: 1124px)
+**Section 2 - Version cachée** (espacement 80px) :
+- Images 1 & 2 (identiques)
+- Traductions avec underscores (mot/expression caché)
+- Footer identique
 
-5. **Traduction 2** (Inter 34px, fond noir #212121, texte blanc)
-
-6. **Footer** (Fira Mono 34px, fond gris #e0e0e0)
-   - Texte : "(Open the post to reveal the explanation)"
-
-7. **Explication + PS + Lien + Subreddit** (Inter 16px, fond blanc, texte noir, aligné à gauche)
-   - Explication pédagogique
-   - PS promotionnel (choisi aléatoirement, différent pour chaque subreddit)
-   - Lien raccourci Ablink unique
-   - Nom du subreddit (pour identification)
+**Partie textuelle** (une seule fois à la fin) :
+- Explication pédagogique
+- PS promotionnel (aléatoire, différent par subreddit)
+- Lien Ablink unique
+- Nom subreddit
 
 ### Polices utilisées
 - **Fira Mono** (Regular 400) : Titre et footer
@@ -187,10 +200,10 @@ Exemples pour `--expression "en déplacement"` :
 - `en-deplacement-2025-12-30-r-learningfrench.html`
 - `en-deplacement-2025-12-30-r-learnfrench.html`
 
-Chaque fichier contient :
-- Même explication/traductions/OCR
-- PS différent (3 PS aléatoires sans répétition)
-- Lien Ablink unique (titre: "{expression} - r/{subreddit}")
+Chaque fichier contient 2 sections (visible + cachée) :
+- Section 1 : Traductions complètes
+- Section 2 : Traductions avec underscores
+- Partie textuelle unique : explication + PS (différent) + lien Ablink unique
 
 ## Gestion d'erreurs
 
@@ -204,13 +217,14 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 
 ## Coûts estimés
 
-**Par génération (3 fichiers HTML) :**
-- 2 appels Vision API (OCR) : ~$0.0003
-- 2 appels traduction : ~$0.0001
-- 1 appel explication : ~$0.0001
-- 3 appels API Ablink : gratuit
+**Par génération (3 fichiers HTML × 2 sections) :**
+- 2 OCR (GPT-4o-mini) : ~$0.0003
+- 2 traductions (GPT-4o-mini) : ~$0.0001
+- 2 cachages (GPT-4o) : ~$0.001
+- 1 explication (GPT-4o-mini) : ~$0.0001
+- 3 liens Ablink : gratuit
 
-**Total : ~$0.0005** (moins d'un centime pour 3 posts)
+**Total : ~$0.0015** (moins de 2 centimes pour 3 posts)
 
 ## Fichiers exclus du repo (.gitignore)
 
@@ -244,16 +258,20 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 - **V3** : Remplacement Tesseract par OpenAI Vision
 - **V3.1** : Génération automatique des explications
 - **V4** : Temperature=0 + différenciation expressions/mots + prompts optimisés
-- **V5** : Génération multi-subreddit (3 fichiers) + intégration API Ablink pour liens uniques + PS aléatoires
+- **V5** : Génération multi-subreddit (3 fichiers) + API Ablink + PS aléatoires
+- **V6** : Cachage automatique des traductions (GPT-4o) + structure HTML à 2 sections (visible + cachée)
 
 ### Choix techniques importants
-- **OpenAI Vision plutôt que Tesseract** : Meilleure gestion des sous-titres stylisés
-- **GPT-4o-mini plutôt que GPT-4o** : 100x moins cher, qualité suffisante
-- **Temperature=0** : Résultats déterministes et consistants
-- **3 fichiers HTML par génération** : Anti-ban Reddit (liens + PS différents par subreddit)
-- **API Ablink** : Tracking des performances + liens uniques
-- **9 variations de PS** : Sélection aléatoire de 3 différents pour maximiser la variété
-- **Gestion d'erreur gracieuse pour Ablink** : Continue sans lien si API échoue
+- **OpenAI Vision** : Meilleure gestion des sous-titres stylisés vs Tesseract
+- **GPT-4o-mini** : OCR/traduction/explication (économique)
+- **GPT-4o** : Cachage uniquement (précision nécessaire, 80% succès en tests)
+- **Approche 2-step pour cachage** : Traduction puis cachage séparé (vs 1-step qui échouait)
+- **Temperature=0** : Résultats déterministes
+- **2 sections par HTML** : Versions visible + cachée dans même fichier (flexibilité screenshot)
+- **3 fichiers par génération** : Anti-ban Reddit (liens + PS différents)
+- **API Ablink** : Tracking + liens uniques par subreddit
+- **9 variations PS** : Sélection aléatoire de 3 différents
+- **Gestion d'erreur gracieuse Ablink** : Continue sans lien si API échoue
 
 ## Support et maintenance
 

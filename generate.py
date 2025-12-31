@@ -25,7 +25,6 @@ PS_VARIATIONS = [
     "PS: if you like to watch French content on Netflix and if you sometimes hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that adjusts the subtitles to your level. If you want to support this post and if you think that this tool could be useful, feel free give it a try ;)",
     "PS: if you like to watch French content on Netflix and if you sometime hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that I would recommend to use. This extension adjusts the subtitles to your level (if a subtitle is adapted to your level, it displays it in French, if a subtitle is too hard, it displays it in your native language). I use it to learn Portuguese, it provides a good balance between practicing your target language and enjoying the show",
     "How to support these posts: check out this tool that I made to learn French with Netflix.",
-    "Want to support my posts? I made a small Netflix tool that switches subtitles between French and your native language depending on difficulty",
     "If you want to improve your French while watching Netflix, here is a tool I made that decide if a subtitle should be displayed in French or in your Native language based on your level.",
     "If you watch Netflix on your computer, I built a simple tool that shows subtitles in French only when the words are familiar to you, otherwise it switches to your native language.",
     "PS: If you're a Netflix user, I made a tool that automatically chooses between French and native subtitles depending on the vocabulary you know."
@@ -117,13 +116,13 @@ def translate_subtitle(subtitle_french):
             messages=[
                 {"role": "user", "content": f"""traduis cette phrase en anglais (littéralement)
 
-dans ta réponse, écris uniquement la traduction, rien d'autre, pas d'explication, juste la traduction. Ne mets pas de guillemets autour de la traduction. 
+dans ta réponse, écris uniquement la traduction, rien d'autre, pas d'explication, juste la traduction. Ne mets pas de guillemets autour de la traduction.
 
 Pour "Ça vous dérange pas la fumée"
 
 une bonne traduction littérale est "It doesn't bother you the smoke."
 
-L'idée c'est d'avoir une structure de phrase similaire avec à peu près les mêmes mots. 
+L'idée c'est d'avoir une structure de phrase similaire avec à peu près les mêmes mots.
 
 Phrase à traduire : {subtitle_french}"""}
             ]
@@ -135,6 +134,69 @@ Phrase à traduire : {subtitle_french}"""}
 
     except Exception as e:
         print(f"❌ Erreur lors de l'appel API OpenAI : {e}")
+        sys.exit(1)
+
+
+def hide_text_in_translation(translation_english, subtitle_french, text_to_hide, is_expression):
+    """Cache le mot/expression dans la traduction anglaise via OpenAI API (GPT-4o)"""
+    # Vérifier que la clé API est configurée
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("❌ Erreur : La clé API OpenAI n'est pas configurée.")
+        print("   Crée un fichier .env avec : OPENAI_API_KEY=ta-clé-api")
+        sys.exit(1)
+
+    # Déterminer le type (Expression ou Mot)
+    text_type = "Expression" if is_expression else "Mot"
+
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            temperature=0,
+            messages=[
+                {"role": "user", "content": f"""Tu as un sous-titre français qui a été traduit en anglais.
+
+Dans la traduction anglaise, tu dois cacher la partie qui correspond au {text_type.lower()} français que je te fournis, en remplaçant chaque lettre et espace par un underscore "_".
+
+Exemples :
+
+Exemple 1:
+Sous-titre français: "Vous faites fausse route."
+Traduction anglaise: "You are making false way"
+Expression française à cacher: "faire fausse route"
+Partie anglaise correspondante: "making false way" (16 caractères)
+Résultat: "You are ________________"
+
+Exemple 2:
+Sous-titre français: "C'est un objectif réalisable."
+Traduction anglaise: "It's an objective achievable."
+Mot français à cacher: "objectif"
+Partie anglaise correspondante: "objective" (9 caractères)
+Résultat: "It's an _________ achievable."
+
+Exemple 3:
+Sous-titre français: "Et puis c'est pas gagné."
+Traduction anglaise: "And then it's not won."
+Expression française à cacher: "c'est pas gagné"
+Partie anglaise correspondante: "it's not won" (12 caractères)
+Résultat: "And then ____________."
+
+IMPORTANT: Renvoie UNIQUEMENT la traduction avec les underscores, rien d'autre.
+
+Sous-titre français: {subtitle_french}
+Traduction anglaise: {translation_english}
+{text_type} français à cacher: "{text_to_hide}"
+"""}
+            ]
+        )
+        translation_hidden = response.choices[0].message.content.strip()
+        # Nettoyer les guillemets si présents
+        translation_hidden = translation_hidden.strip('"').strip("'")
+        return translation_hidden
+
+    except Exception as e:
+        print(f"❌ Erreur lors du cachage de la traduction : {e}")
         sys.exit(1)
 
 
@@ -259,8 +321,8 @@ def create_short_link(title):
         return "Error: Unable to generate link"
 
 
-def generate_html(expression, image1_path, translation1, image2_path, translation2, explanation, ps_text, short_link, subreddit_name):
-    """Génère le HTML complet avec le template CSS"""
+def generate_html(expression, image1_path, translation1_visible, translation1_hidden, image2_path, translation2_visible, translation2_hidden, explanation, ps_text, short_link, subreddit_name):
+    """Génère le HTML complet avec 2 sections (visible + cachée)"""
 
     html_template = f"""<!DOCTYPE html>
 <html lang="en">
@@ -282,16 +344,23 @@ def generate_html(expression, image1_path, translation1, image2_path, translatio
             font-family: Arial, sans-serif;
             background-color: #ffffff;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 20px;
         }}
 
+        .wrapper {{
+            max-width: 1124px;
+            width: 100%;
+        }}
+
         .container {{
             max-width: 1124px;
             width: 100%;
             background-color: #ffffff;
+            margin-bottom: 80px;
         }}
 
         .title {{
@@ -345,19 +414,28 @@ def generate_html(expression, image1_path, translation1, image2_path, translatio
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="wrapper">
         <div class="title">What does "{expression}" mean here?</div>
 
-        <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
+        <!-- SECTION 1: VERSION VISIBLE -->
+        <div class="container">
+            <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
+            <div class="translation-box">{translation1_visible}</div>
+            <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
+            <div class="translation-box">{translation2_visible}</div>
+            <div class="footer">(Open the post to reveal the explanation)</div>
+        </div>
 
-        <div class="translation-box">{translation1}</div>
+        <!-- SECTION 2: VERSION CACHÉE -->
+        <div class="container">
+            <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
+            <div class="translation-box">{translation1_hidden}</div>
+            <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
+            <div class="translation-box">{translation2_hidden}</div>
+            <div class="footer">(Open the post to reveal the explanation)</div>
+        </div>
 
-        <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
-
-        <div class="translation-box">{translation2}</div>
-
-        <div class="footer">(Open the post to reveal the explanation)</div>
-
+        <!-- PARTIE TEXTUELLE (une seule fois) -->
         <div class="explanation">{explanation}
 
 {ps_text}
@@ -418,6 +496,12 @@ def main():
     translation2 = translate_subtitle(subtitle2)
     print(f"✓ Traduction : \"{translation2}\"")
 
+    # Cacher le mot/expression dans les traductions (une seule fois)
+    print(f"⏳ Cachage du {text_type.lower()} dans les traductions...")
+    translation1_hidden = hide_text_in_translation(translation1, subtitle1, text, is_expression)
+    translation2_hidden = hide_text_in_translation(translation2, subtitle2, text, is_expression)
+    print(f"✓ Traductions cachées générées")
+
     # Générer l'explication
     print(f"⏳ Génération de l'explication ({text_type})...")
     explanation = generate_explanation(text, is_expression=is_expression)
@@ -454,13 +538,15 @@ def main():
         # Nom du fichier pour ce subreddit
         output_filename = f"{text_slug}-{date_str}-{subreddit_slug}.html"
 
-        # Générer le HTML avec le PS correspondant
+        # Générer le HTML avec les 2 sections (visible + cachée)
         html_content = generate_html(
             text,
             args.image1,
-            translation1,
+            translation1,  # traduction visible
+            translation1_hidden,  # traduction cachée
             args.image2,
-            translation2,
+            translation2,  # traduction visible
+            translation2_hidden,  # traduction cachée
             explanation,
             ps_list[i],  # PS différent pour chaque subreddit
             short_link,
