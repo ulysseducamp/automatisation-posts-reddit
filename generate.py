@@ -12,6 +12,7 @@ import sys
 import base64
 import random
 import requests
+import shutil
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -521,6 +522,15 @@ def main():
     text_slug = slugify(text)
     date_str = datetime.now().strftime('%Y-%m-%d')
 
+    # Renommer les images avec des noms uniques et les déplacer dans img/
+    image1_new_name = f"img/{text_slug}-{date_str}-scene1.png"
+    image2_new_name = f"img/{text_slug}-{date_str}-scene2.png"
+
+    print(f"⏳ Renommage des images...")
+    shutil.move(args.image1, image1_new_name)
+    shutil.move(args.image2, image2_new_name)
+    print(f"✓ Images renommées et déplacées dans img/")
+
     # Générer 3 fichiers HTML (un par subreddit)
     generated_files = []
 
@@ -541,10 +551,10 @@ def main():
         # Générer le HTML avec les 2 sections (visible + cachée)
         html_content = generate_html(
             text,
-            args.image1,
+            image1_new_name,
             translation1,  # traduction visible
             translation1_hidden,  # traduction cachée
-            args.image2,
+            image2_new_name,
             translation2,  # traduction visible
             translation2_hidden,  # traduction cachée
             explanation,
