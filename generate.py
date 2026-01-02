@@ -401,9 +401,20 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
             color: #000000;
         }}
 
+        .post-title {{
+            background-color: #ffffff;
+            padding: 40px 40px 20px 40px;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 20px;
+        }}
+
         .explanation {{
             background-color: #ffffff;
-            padding: 40px;
+            padding: 0 40px 40px 40px;
             text-align: left;
             font-family: 'Inter', sans-serif;
             font-size: 16px;
@@ -437,6 +448,7 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
         </div>
 
         <!-- PARTIE TEXTUELLE (une seule fois) -->
+        <div class="post-title">Your daily vocab' workout 🏋️ #</div>
         <div class="explanation">{explanation}
 
 {ps_text}
