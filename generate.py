@@ -21,14 +21,14 @@ load_dotenv()
 
 # Variations de post-scriptum promotionnel (choisi aléatoirement)
 PS_VARIATIONS = [
-    "PS: If you watch Netflix on your computer and want to support this post, you can check this tool that I made.",
-    "PS: If you like watching Netflix and you sometimes hesitate between putting the subtitles in French or in your native language, I made a little tool that solves this problem",
-    "PS: if you like to watch French content on Netflix and if you sometimes hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that adjusts the subtitles to your level. If you want to support this post and if you think that this tool could be useful, feel free give it a try ;)",
-    "PS: if you like to watch French content on Netflix and if you sometime hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that I would recommend to use. This extension adjusts the subtitles to your level (if a subtitle is adapted to your level, it displays it in French, if a subtitle is too hard, it displays it in your native language). I use it to learn Portuguese, it provides a good balance between practicing your target language and enjoying the show",
-    "How to support these posts: check out this tool that I made to learn French with Netflix.",
-    "If you want to improve your French while watching Netflix, here is a tool I made that decide if a subtitle should be displayed in French or in your Native language based on your level.",
-    "If you watch Netflix on your computer, I built a simple tool that shows subtitles in French only when the words are familiar to you, otherwise it switches to your native language.",
-    "PS: If you're a Netflix user, I made a tool that automatically chooses between French and native subtitles depending on the vocabulary you know."
+    "PS: If you watch Netflix on your computer and want to support this post, you can check [this tool] that I made.",
+    "PS: If you like watching Netflix and you sometimes hesitate between putting the subtitles in French or in your native language, I made a [little tool] that solves this problem",
+    "PS: if you like to watch French content on Netflix and if you sometimes hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that adjusts the subtitles to your level. If you want to support this post and if you think that this tool could be useful, feel free give it a try by [clicking here] ;)",
+    "PS: if you like to watch French content on Netflix and if you sometime hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that I would recommend to use. This extension adjusts the subtitles to your level (if a subtitle is adapted to your level, it displays it in French, if a subtitle is too hard, it displays it in your native language). I use it to learn Portuguese, it provides a good balance between practicing your target language and enjoying the show. Here is [the link to try it].",
+    "How to support these posts: check out [this tool] that I made to learn French with Netflix.",
+    "If you want to improve your French while watching Netflix, here is a [simple tool] I made that decide if a subtitle should be displayed in French or in your Native language based on your level.",
+    "Quick note: If you watch Netflix on your computer, I built a [simple tool] that shows subtitles in French only when the words are familiar to you, otherwise it switches to your native language.",
+    "PS: If you're a Netflix user, I made a [simple tool] that automatically chooses between French and native subtitles depending on the vocabulary you know."
 ]
 
 
@@ -276,6 +276,15 @@ Mot à expliquer : "{text}" """
         sys.exit(1)
 
 
+def convert_ps_to_markdown_link(ps_text, link_url):
+    """Convertit [texte] en [texte](lien) dans le texte du PS"""
+    import re
+    # Remplacer [texte] par [texte](lien)
+    pattern = r'\[([^\]]+)\]'
+    markdown_text = re.sub(pattern, r'[\1](' + link_url + ')', ps_text)
+    return markdown_text
+
+
 def create_short_link(title):
     """Crée un lien raccourci via l'API Ablink"""
     # Vérifier que la clé API est configurée
@@ -452,7 +461,6 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
         <div class="explanation">{explanation}
 
 {ps_text}
-{short_link}
 
 {subreddit_name}</div>
     </div>
@@ -560,6 +568,9 @@ def main():
         # Nom du fichier pour ce subreddit
         output_filename = f"{text_slug}-{date_str}-{subreddit_slug}.html"
 
+        # Convertir le PS en format Markdown avec lien intégré
+        ps_with_link = convert_ps_to_markdown_link(ps_list[i], short_link)
+
         # Générer le HTML avec les 2 sections (visible + cachée)
         html_content = generate_html(
             text,
@@ -570,7 +581,7 @@ def main():
             translation2,  # traduction visible
             translation2_hidden,  # traduction cachée
             explanation,
-            ps_list[i],  # PS différent pour chaque subreddit
+            ps_with_link,  # PS avec lien Markdown intégré
             short_link,
             subreddit_display  # Nom du subreddit (avec r/)
         )
