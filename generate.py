@@ -349,72 +349,72 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
         }}
 
         .wrapper {{
-            max-width: 1124px;
+            max-width: 562px;
             width: 100%;
         }}
 
         .container {{
-            max-width: 1124px;
+            max-width: 562px;
             width: 100%;
             background-color: #ffffff;
-            margin-bottom: 80px;
+            margin-bottom: 40px;
         }}
 
         .title {{
             background-color: #e0e0e0;
-            padding: 40px;
+            padding: 20px;
             text-align: center;
             font-family: 'Fira Mono', monospace;
-            font-size: 48px;
+            font-size: 24px;
             font-weight: 400;
             color: #000000;
         }}
 
         .screenshot {{
             width: 100%;
-            max-width: 1124px;
+            max-width: 562px;
             height: auto;
             display: block;
         }}
 
         .translation-box {{
             background-color: #212121;
-            padding: 32px;
+            padding: 16px;
             text-align: center;
             font-family: 'Inter', sans-serif;
-            font-size: 34px;
+            font-size: 17px;
             font-weight: 400;
             color: #FFFFFF;
         }}
 
         .footer {{
             background-color: #e0e0e0;
-            padding: 20px;
+            padding: 10px;
             text-align: center;
             font-family: 'Fira Mono', monospace;
-            font-size: 34px;
+            font-size: 17px;
             font-weight: 400;
             color: #000000;
         }}
 
         .post-title {{
             background-color: #ffffff;
-            padding: 40px 40px 20px 40px;
+            padding: 20px 20px 10px 20px;
             text-align: left;
             font-family: 'Inter', sans-serif;
             font-size: 32px;
             font-weight: 700;
             color: #000000;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }}
 
         .explanation {{
             background-color: #ffffff;
-            padding: 0 40px 40px 40px;
+            padding: 0 20px 20px 20px;
             text-align: left;
             font-family: 'Inter', sans-serif;
             font-size: 16px;
