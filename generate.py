@@ -276,9 +276,17 @@ Mot à expliquer : "{text}" """
         sys.exit(1)
 
 
+def bold_first_sentence(text):
+    """Met en gras la première phrase (jusqu'au premier point) du texte"""
+    first_dot = text.find('.')
+    if first_dot != -1:
+        # Ajouter ** autour de la première phrase (incluant le point)
+        return f"**{text[:first_dot+1]}**{text[first_dot+1:]}"
+    return text  # Si pas de point trouvé, renvoyer le texte tel quel
+
+
 def convert_ps_to_markdown_link(ps_text, link_url):
     """Convertit [texte] en [texte](lien) dans le texte du PS"""
-    import re
     # Remplacer [texte] par [texte](lien)
     pattern = r'\[([^\]]+)\]'
     markdown_text = re.sub(pattern, r'[\1](' + link_url + ')', ps_text)
@@ -528,6 +536,8 @@ def main():
     # Générer l'explication
     print(f"⏳ Génération de l'explication ({text_type})...")
     explanation = generate_explanation(text, is_expression=is_expression)
+    # Mettre la première phrase en gras
+    explanation = bold_first_sentence(explanation)
     print("✓ Explication générée")
 
     # Sélectionner 3 post-scriptum aléatoires différents
