@@ -462,6 +462,8 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
 
 {ps_text}
 
+Happy learning!
+
 {subreddit_name}</div>
     </div>
 </body>
