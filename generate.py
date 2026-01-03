@@ -540,14 +540,15 @@ def main():
     explanation = bold_first_sentence(explanation)
     print("✓ Explication générée")
 
-    # Sélectionner 3 post-scriptum aléatoires différents
-    ps_list = random.sample(PS_VARIATIONS, 3)
+    # Sélectionner 4 post-scriptum aléatoires différents
+    ps_list = random.sample(PS_VARIATIONS, 4)
 
     # Liste des subreddits
     subreddits = [
         ("r/FrenchImmersion", "r-frenchimmersion"),
         ("r/learningfrench", "r-learningfrench"),
-        ("r/learnfrench", "r-learnfrench")
+        ("r/learnfrench", "r-learnfrench"),
+        ("r/FrenchVocab", "r-frenchvocab")
     ]
 
     # Générer le slug et la date pour les noms de fichiers
@@ -563,7 +564,7 @@ def main():
     shutil.move(args.image2, image2_new_name)
     print(f"✓ Images renommées et déplacées dans img/")
 
-    # Générer 3 fichiers HTML (un par subreddit)
+    # Générer 4 fichiers HTML (un par subreddit)
     generated_files = []
 
     for i, (subreddit_display, subreddit_slug) in enumerate(subreddits):
@@ -605,7 +606,7 @@ def main():
         generated_files.append(output_filename)
 
     # Message de confirmation
-    print(f"\n✓ 3 fichiers HTML générés :")
+    print(f"\n✓ 4 fichiers HTML générés :")
     for filename in generated_files:
         print(f"  - {filename}")
     print(f"\n  Ouvre-les dans ton navigateur pour faire les screenshots!")
