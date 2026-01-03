@@ -29,14 +29,16 @@ Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentiss
 5. Génération explication (GPT-4o-mini) - 1 fois
    └─ Expression OU Mot → Explication pédagogique en anglais
 
-6. Génération multi-subreddit - 3 fois
-   ├─ Sélection de 3 PS aléatoires différents
-   ├─ Création de 3 liens Ablink uniques (API)
-   └─ Génération de 3 fichiers HTML (1 par subreddit, 2 sections par fichier)
+6. Génération multi-subreddit - 4 fois
+   ├─ Sélection de 4 PS aléatoires différents
+   ├─ Création de 4 liens Ablink uniques (API)
+   ├─ Conversion PS en Markdown links [texte](url)
+   └─ Génération de 4 fichiers HTML (1 par subreddit, 2 sections par fichier)
 
 7. Output
-   └─ 3 fichiers HTML : {expression}-{date}-r-{subreddit}.html
-      Chaque fichier contient 2 sections : visible + cachée
+   └─ 4 fichiers HTML dans posts/ : {expression}-{date}-r-{subreddit}.html
+      - Chaque fichier : 2 sections (visible + cachée) avec titres séparés
+      - Images renommées et stockées dans img/
 ```
 
 ## Fichiers du projet
@@ -50,9 +52,11 @@ Script principal contenant toute la logique :
 - `translate_subtitle(subtitle_french)` : Traduction FR → EN littérale (GPT-4o-mini)
 - `hide_text_in_translation(translation_en, subtitle_fr, text, is_expression)` : Cache mot/expression avec underscores (GPT-4o)
 - `generate_explanation(text, is_expression=True)` : Génère explication pédagogique (GPT-4o-mini)
+- `bold_first_sentence(text)` : Met en gras première phrase de l'explication
+- `convert_ps_to_markdown_link(ps_text, link_url)` : Convertit [texte] en [texte](url) Markdown
 - `create_short_link(title)` : Crée lien raccourci via API Ablink
 - `generate_html(...)` : Crée HTML avec 2 sections (visible + cachée)
-- `main()` : Orchestration complète (génère 3 fichiers × 2 sections)
+- `main()` : Orchestration complète (génère 4 fichiers × 2 sections)
 
 ### `requirements.txt`
 Dépendances Python :
@@ -134,25 +138,25 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 
 ## Structure HTML générée
 
-### Layout (2 sections par fichier)
+### Layout (ordre d'affichage)
 
-**Titre commun** (Fira Mono 48px, #e0e0e0)
+**Ordre workflow-friendly :**
+1. Nom subreddit (Inter 16px) - Pour savoir où publier
+2. Titre post "Your daily vocab' workout 🏋️ #" (Inter 32px gras)
+3. Section 1 - Version visible (avec titre propre)
+4. Section 2 - Version cachée (avec titre propre)
+5. Explication + PS + signature
 
-**Section 1 - Version visible :**
-- Images 1 & 2 (max-width: 1124px)
-- Traductions complètes (Inter 34px, #212121, texte blanc)
-- Footer "(Open the post to reveal the explanation)"
+**Chaque section (autonome pour screenshots) :**
+- Titre "What does '{mot}' mean here?" (Fira Mono 24px, #e0e0e0)
+- Images 1 & 2 (max-width: 562px, chemins relatifs ../img/)
+- Traductions (Inter 17px, #212121, fond blanc)
+- Footer "(Open...)" (Fira Mono 17px)
 
-**Section 2 - Version cachée** (espacement 80px) :
-- Images 1 & 2 (identiques)
-- Traductions avec underscores (mot/expression caché)
-- Footer identique
-
-**Partie textuelle** (une seule fois à la fin) :
-- Explication pédagogique
-- PS promotionnel (aléatoire, différent par subreddit)
-- Lien Ablink unique
-- Nom subreddit
+**Partie textuelle :**
+- Explication (première phrase en gras via Markdown **)
+- PS avec lien Markdown intégré [texte](url)
+- Signature "Happy learning!"
 
 ### Polices utilisées
 - **Fira Mono** (Regular 400) : Titre et footer
@@ -193,17 +197,23 @@ python3 generate.py \
 **Note :** Les arguments `--expression` et `--mot` sont mutuellement exclusifs (il faut utiliser l'un OU l'autre).
 
 ### Output
-**3 fichiers HTML** générés par commande, format : `{text-slug}-{date}-r-{subreddit}.html`
+**4 fichiers HTML** dans `posts/`, format : `posts/{text-slug}-{date}-r-{subreddit}.html`
 
 Exemples pour `--expression "en déplacement"` :
-- `en-deplacement-2025-12-30-r-frenchimmersion.html`
-- `en-deplacement-2025-12-30-r-learningfrench.html`
-- `en-deplacement-2025-12-30-r-learnfrench.html`
+- `posts/en-deplacement-2026-01-03-r-frenchimmersion.html`
+- `posts/en-deplacement-2026-01-03-r-learningfrench.html`
+- `posts/en-deplacement-2026-01-03-r-learnfrench.html`
+- `posts/en-deplacement-2026-01-03-r-frenchvocab.html`
 
-Chaque fichier contient 2 sections (visible + cachée) :
-- Section 1 : Traductions complètes
-- Section 2 : Traductions avec underscores
-- Partie textuelle unique : explication + PS (différent) + lien Ablink unique
+**Images renommées** dans `img/` :
+- `img/en-deplacement-2026-01-03-scene1.png`
+- `img/en-deplacement-2026-01-03-scene2.png`
+
+Chaque HTML contient :
+- Nom subreddit + titre post (en haut pour workflow)
+- Section 1 : Traductions complètes (avec titre)
+- Section 2 : Traductions cachées (avec titre)
+- Explication (1ère phrase gras) + PS Markdown + signature
 
 ## Gestion d'erreurs
 
@@ -217,14 +227,14 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 
 ## Coûts estimés
 
-**Par génération (3 fichiers HTML × 2 sections) :**
+**Par génération (4 fichiers HTML × 2 sections) :**
 - 2 OCR (GPT-4o-mini) : ~$0.0003
 - 2 traductions (GPT-4o-mini) : ~$0.0001
 - 2 cachages (GPT-4o) : ~$0.001
 - 1 explication (GPT-4o-mini) : ~$0.0001
-- 3 liens Ablink : gratuit
+- 4 liens Ablink : gratuit
 
-**Total : ~$0.0015** (moins de 2 centimes pour 3 posts)
+**Total : ~$0.0015** (moins de 2 centimes pour 4 posts)
 
 ## Fichiers exclus du repo (.gitignore)
 
@@ -236,10 +246,11 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 
 ## Subreddits cibles
 
-3 subreddits configurés (génération automatique de 3 fichiers HTML) :
+4 subreddits configurés (génération automatique de 4 fichiers HTML) :
 - `r/FrenchImmersion`
 - `r/learningfrench`
 - `r/learnfrench`
+- `r/FrenchVocab`
 
 ## Évolutions futures possibles
 
@@ -253,25 +264,28 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 ## Notes de développement
 
 ### Historique des versions
-- **V1** : Génération HTML manuelle avec traductions manuelles
-- **V2** : Ajout traduction automatique via OpenAI
-- **V3** : Remplacement Tesseract par OpenAI Vision
-- **V3.1** : Génération automatique des explications
-- **V4** : Temperature=0 + différenciation expressions/mots + prompts optimisés
-- **V5** : Génération multi-subreddit (3 fichiers) + API Ablink + PS aléatoires
-- **V6** : Cachage automatique des traductions (GPT-4o) + structure HTML à 2 sections (visible + cachée)
+- **V1-V6** : Versions initiales (traductions, OCR, cachage, multi-subreddit)
+- **V7** : Images auto-renommées et organisées dans img/
+- **V8** : Titre post Reddit ajouté au HTML
+- **V9** : Réduction largeur HTML (562px) pour screenshots
+- **V10** : Liens Markdown intégrés [texte](url) dans PS
+- **V11** : Signature "Happy learning!" pour espacement
+- **V12** : Première phrase en gras + cleanup imports
+- **V13** : 4ème subreddit r/FrenchVocab ajouté
+- **V14** : Organisation posts/ + ordre workflow-friendly
+- **V15** : Titres dupliqués pour sections autonomes
 
 ### Choix techniques importants
-- **OpenAI Vision** : Meilleure gestion des sous-titres stylisés vs Tesseract
-- **GPT-4o-mini** : OCR/traduction/explication (économique)
-- **GPT-4o** : Cachage uniquement (précision nécessaire, 80% succès en tests)
-- **Approche 2-step pour cachage** : Traduction puis cachage séparé (vs 1-step qui échouait)
+- **OpenAI Vision (GPT-4o-mini)** : OCR précis vs Tesseract
+- **GPT-4o** : Cachage uniquement (précision 80%)
 - **Temperature=0** : Résultats déterministes
-- **2 sections par HTML** : Versions visible + cachée dans même fichier (flexibilité screenshot)
-- **3 fichiers par génération** : Anti-ban Reddit (liens + PS différents)
-- **API Ablink** : Tracking + liens uniques par subreddit
-- **9 variations PS** : Sélection aléatoire de 3 différents
-- **Gestion d'erreur gracieuse Ablink** : Continue sans lien si API échoue
+- **2 sections autonomes** : Chaque section a son titre pour screenshots séparés
+- **4 fichiers/génération** : Anti-ban Reddit (4 subreddits, liens + PS uniques)
+- **Markdown links** : [texte](url) intégré dans PS pour copier-coller direct
+- **Organisation dossiers** : posts/ (HTML) + img/ (images renommées)
+- **Workflow-friendly** : Ordre HTML = ordre workflow (subreddit → titre → images → explication)
+- **9 variations PS** : Sélection aléatoire de 4 différents
+- **Première phrase gras** : Améliore lisibilité explication
 
 ## Support et maintenance
 

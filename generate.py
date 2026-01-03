@@ -29,6 +29,7 @@ PS_VARIATIONS = [
     "If you want to improve your French while watching Netflix, here is a [simple tool] I made that decide if a subtitle should be displayed in French or in your Native language based on your level.",
     "Quick note: If you watch Netflix on your computer, I built a [simple tool] that shows subtitles in French only when the words are familiar to you, otherwise it switches to your native language.",
     "PS: If you're a Netflix user, I made a [simple tool] that automatically chooses between French and native subtitles depending on the vocabulary you know."
+    "PS: If you want to learn dozens of new words every time you watch a Netflix show, you can [try my tool called Subly]."
 ]
 
 
@@ -444,9 +445,14 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
 </head>
 <body>
     <div class="wrapper">
-        <div class="title">What does "{expression}" mean here?</div>
+        <!-- NOM DU SUBREDDIT EN PREMIER -->
+        <div class="explanation">{subreddit_name}</div>
+
+        <!-- TITRE DU POST EN DEUXIÈME -->
+        <div class="post-title">Your daily vocab' workout 🏋️ #</div>
 
         <!-- SECTION 1: VERSION VISIBLE -->
+        <div class="title">What does "{expression}" mean here?</div>
         <div class="container">
             <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
             <div class="translation-box">{translation1_visible}</div>
@@ -456,6 +462,7 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
         </div>
 
         <!-- SECTION 2: VERSION CACHÉE -->
+        <div class="title">What does "{expression}" mean here?</div>
         <div class="container">
             <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
             <div class="translation-box">{translation1_hidden}</div>
@@ -464,15 +471,12 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
             <div class="footer">(Open the post to reveal the explanation)</div>
         </div>
 
-        <!-- PARTIE TEXTUELLE (une seule fois) -->
-        <div class="post-title">Your daily vocab' workout 🏋️ #</div>
+        <!-- EXPLICATION EN DERNIER -->
         <div class="explanation">{explanation}
 
 {ps_text}
 
-Happy learning!
-
-{subreddit_name}</div>
+Happy learning!</div>
     </div>
 </body>
 </html>"""
@@ -578,19 +582,23 @@ def main():
         else:
             print(f"✓ Lien créé : {short_link}")
 
-        # Nom du fichier pour ce subreddit
-        output_filename = f"{text_slug}-{date_str}-{subreddit_slug}.html"
+        # Nom du fichier pour ce subreddit (dans le dossier posts/)
+        output_filename = f"posts/{text_slug}-{date_str}-{subreddit_slug}.html"
 
         # Convertir le PS en format Markdown avec lien intégré
         ps_with_link = convert_ps_to_markdown_link(ps_list[i], short_link)
 
+        # Adapter les chemins des images pour le dossier posts/ (ajouter ../)
+        image1_path_for_html = f"../{image1_new_name}"
+        image2_path_for_html = f"../{image2_new_name}"
+
         # Générer le HTML avec les 2 sections (visible + cachée)
         html_content = generate_html(
             text,
-            image1_new_name,
+            image1_path_for_html,
             translation1,  # traduction visible
             translation1_hidden,  # traduction cachée
-            image2_new_name,
+            image2_path_for_html,
             translation2,  # traduction visible
             translation2_hidden,  # traduction cachée
             explanation,
