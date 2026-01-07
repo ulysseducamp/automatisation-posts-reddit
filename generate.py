@@ -6,6 +6,7 @@ Usage: python generate.py --expression "..." --image1 ... --image2 ...
 
 import argparse
 from datetime import datetime
+import json
 import re
 import os
 import sys
@@ -22,13 +23,13 @@ load_dotenv()
 # Variations de post-scriptum promotionnel (choisi aléatoirement)
 PS_VARIATIONS = [
     "PS: If you watch Netflix on your computer and want to support this post, you can check [this tool] that I made.",
-    "PS: If you like watching Netflix and you sometimes hesitate between putting the subtitles in French or in your native language, I made a [little tool] that solves this problem",
-    "PS: if you like to watch French content on Netflix and if you sometimes hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that adjusts the subtitles to your level. If you want to support this post and if you think that this tool could be useful, feel free give it a try by [clicking here] ;)",
-    "PS: if you like to watch French content on Netflix and if you sometime hesitate between puting the subtitles in French or in your native language, I made a little tool called Subly that I would recommend to use. This extension adjusts the subtitles to your level (if a subtitle is adapted to your level, it displays it in French, if a subtitle is too hard, it displays it in your native language). I use it to learn Portuguese, it provides a good balance between practicing your target language and enjoying the show. Here is [the link to try it].",
+    "PS: If you like watching Netflix and sometimes hesitate between putting the subtitles in French or in your native language, I made a [little tool] that solves this problem",
+    "PS: if you like watching French content on Netflix and sometimes hesitate between putting the subtitles in French or in your native language, I made a little tool called Subly that adjusts the subtitles to your level. If you want to support this post and if you think that this tool could be useful, feel free give it a try by [clicking here] ;)",
+    "PS: if you like watching French content on Netflix and sometimes hesitate between putting the subtitles in French or in your native language, I made a little tool called Subly that I would recommend to use. This extension adjusts the subtitles to your level (if a subtitle is adapted to your level, it displays it in French, if a subtitle is too hard, it displays it in your native language). I use it to learn Portuguese, it provides a good balance between practicing your target language and enjoying the show. Here is [the link to try it].",
     "How to support these posts: check out [this tool] that I made to learn French with Netflix.",
-    "If you want to improve your French while watching Netflix, here is a [simple tool] I made that decide if a subtitle should be displayed in French or in your Native language based on your level.",
+    "If you want to improve your French while watching Netflix, here is a [simple tool] I made that decides if a subtitle should be displayed in French or in your Native language based on your level.",
     "Quick note: If you watch Netflix on your computer, I built a [simple tool] that shows subtitles in French only when the words are familiar to you, otherwise it switches to your native language.",
-    "PS: If you're a Netflix user, I made a [simple tool] that automatically chooses between French and native subtitles depending on the vocabulary you know."
+    "PS: If you're a Netflix user, I made a [simple tool] that automatically chooses between French and native subtitles depending on the vocabulary you know.",
     "PS: If you want to learn dozens of new words every time you watch a Netflix show, you can [try my tool called Subly]."
 ]
 
@@ -340,8 +341,12 @@ def create_short_link(title):
         return "Error: Unable to generate link"
 
 
-def generate_html(expression, image1_path, translation1_visible, translation1_hidden, image2_path, translation2_visible, translation2_hidden, explanation, ps_text, short_link, subreddit_name):
-    """Génère le HTML complet avec 2 sections (visible + cachée)"""
+def generate_html(expression, date_str, image1_path, translation1_visible, translation1_hidden, image2_path, translation2_visible, translation2_hidden, explanation, ps_list, subreddits):
+    """Génère le HTML complet avec JavaScript pour gestion dynamique des subreddits"""
+
+    # Convertir les listes Python en JSON pour JavaScript
+    ps_json = json.dumps(ps_list)
+    subreddits_json = json.dumps([name for name, _ in subreddits])
 
     html_template = f"""<!DOCTYPE html>
 <html lang="en">
@@ -441,12 +446,110 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
             line-height: 1.6;
             white-space: pre-wrap;
         }}
+
+        .subreddit-name {{
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            color: #000000;
+            padding: 0 20px 10px 20px;
+        }}
+
+        .tracker {{
+            background-color: #f5f5f5;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }}
+
+        .tracker h3 {{
+            font-family: 'Inter', sans-serif;
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #000000;
+        }}
+
+        .tracker-item {{
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+        }}
+
+        .tracker-item input[type="checkbox"] {{
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }}
+
+        .tracker-item input[type="checkbox"]:disabled {{
+            cursor: not-allowed;
+            opacity: 0.5;
+        }}
+
+        .tracker-item label {{
+            cursor: pointer;
+        }}
+
+        .tracker-item input[type="checkbox"]:disabled + label {{
+            cursor: not-allowed;
+            opacity: 0.5;
+        }}
+
+        [contenteditable="true"] {{
+            outline: 2px dashed transparent;
+            transition: outline 0.2s;
+        }}
+
+        [contenteditable="true"]:hover {{
+            outline-color: #2196F3;
+        }}
+
+        [contenteditable="true"]:focus {{
+            outline-color: #1976D2;
+            background-color: #f0f8ff;
+            color: #000000;
+        }}
+
+        .translation-box[contenteditable="true"]:focus {{
+            background-color: #f0f8ff;
+            color: #000000;
+        }}
+
+        .copy-btn {{
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 20px 20px 10px 20px;
+            transition: background-color 0.3s, transform 0.1s;
+            display: inline-block;
+        }}
+
+        .copy-btn:hover {{
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }}
+
+        .copy-btn:active {{
+            transform: translateY(0);
+        }}
+
+        .copy-btn.copied {{
+            background-color: #2196F3;
+        }}
     </style>
 </head>
 <body>
     <div class="wrapper">
         <!-- NOM DU SUBREDDIT EN PREMIER -->
-        <div class="explanation">{subreddit_name}</div>
+        <div class="subreddit-name" id="current-subreddit"></div>
 
         <!-- TITRE DU POST EN DEUXIÈME -->
         <div class="post-title">Your daily vocab' workout 🏋️ #</div>
@@ -455,9 +558,9 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
         <div class="title">What does "{expression}" mean here?</div>
         <div class="container">
             <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
-            <div class="translation-box">{translation1_visible}</div>
+            <div class="translation-box" contenteditable="true" id="translation1-visible">{translation1_visible}</div>
             <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
-            <div class="translation-box">{translation2_visible}</div>
+            <div class="translation-box" contenteditable="true" id="translation2-visible">{translation2_visible}</div>
             <div class="footer">(Open the post to reveal the explanation)</div>
         </div>
 
@@ -465,19 +568,171 @@ def generate_html(expression, image1_path, translation1_visible, translation1_hi
         <div class="title">What does "{expression}" mean here?</div>
         <div class="container">
             <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
-            <div class="translation-box">{translation1_hidden}</div>
+            <div class="translation-box" contenteditable="true" id="translation1-hidden">{translation1_hidden}</div>
             <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
-            <div class="translation-box">{translation2_hidden}</div>
+            <div class="translation-box" contenteditable="true" id="translation2-hidden">{translation2_hidden}</div>
             <div class="footer">(Open the post to reveal the explanation)</div>
         </div>
 
-        <!-- EXPLICATION EN DERNIER -->
-        <div class="explanation">{explanation}
+        <!-- EXPLICATION -->
+        <div class="explanation" contenteditable="true" id="explanation">{explanation}</div>
 
-{ps_text}
+        <!-- PS (dynamique) -->
+        <div class="explanation" id="ps-text"></div>
 
-Happy learning!</div>
+        <!-- BOUTON COPIER -->
+        <button class="copy-btn" id="copy-btn">📋 Copier Explication + PS</button>
+
+        <!-- SIGNATURE -->
+        <div class="explanation">Happy learning!</div>
+
+        <!-- TRACKER DE PUBLICATION -->
+        <div class="tracker">
+            <h3>Publication tracker:</h3>
+            <div id="tracker-list"></div>
+        </div>
     </div>
+
+    <script>
+        // Configuration
+        const EXPRESSION = "{expression}";
+        const DATE = "{date_str}";
+        const SUBREDDITS = {subreddits_json};
+        const PS_VARIATIONS = {ps_json};
+        const STORAGE_KEY = `reddit-post-${{EXPRESSION}}-${{DATE}}`;
+
+        // État par défaut
+        const DEFAULT_STATE = {{
+            published: [false, false, false, false],
+            currentIndex: 0,
+            editedContent: {{}}
+        }};
+
+        // Charger l'état depuis localStorage
+        function loadState() {{
+            const saved = localStorage.getItem(STORAGE_KEY);
+            return saved ? JSON.parse(saved) : DEFAULT_STATE;
+        }}
+
+        // Sauvegarder l'état dans localStorage
+        function saveState(state) {{
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }}
+
+        // Mettre à jour l'affichage
+        function updateDisplay(state) {{
+            // Trouver le premier subreddit non publié
+            let currentIndex = state.published.findIndex(pub => pub === false);
+            if (currentIndex === -1) {{
+                // Tous publiés, rester sur le dernier
+                currentIndex = SUBREDDITS.length - 1;
+            }}
+            state.currentIndex = currentIndex;
+
+            // Mettre à jour le nom du subreddit
+            document.getElementById('current-subreddit').textContent = SUBREDDITS[currentIndex];
+
+            // Mettre à jour le PS
+            document.getElementById('ps-text').textContent = PS_VARIATIONS[currentIndex];
+
+            // Créer/mettre à jour les checkboxes
+            const trackerList = document.getElementById('tracker-list');
+            trackerList.innerHTML = '';
+
+            SUBREDDITS.forEach((subreddit, index) => {{
+                const item = document.createElement('div');
+                item.className = 'tracker-item';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `checkbox-${{index}}`;
+                checkbox.checked = state.published[index];
+                checkbox.disabled = state.published[index]; // Désactiver si déjà publié
+                checkbox.addEventListener('change', () => handleCheckboxChange(index));
+
+                const label = document.createElement('label');
+                label.htmlFor = `checkbox-${{index}}`;
+                label.textContent = subreddit;
+
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                trackerList.appendChild(item);
+            }});
+
+            // Restaurer le contenu édité
+            if (state.editedContent) {{
+                Object.keys(state.editedContent).forEach(id => {{
+                    const element = document.getElementById(id);
+                    if (element) {{
+                        element.textContent = state.editedContent[id];
+                    }}
+                }});
+            }}
+        }}
+
+        // Gérer le changement de checkbox
+        function handleCheckboxChange(index) {{
+            const state = loadState();
+            state.published[index] = true;
+
+            // Sauvegarder et mettre à jour
+            saveState(state);
+            updateDisplay(state);
+        }}
+
+        // Sauvegarder les modifications de contenu éditable
+        function setupContentEditableSaving() {{
+            const editableElements = document.querySelectorAll('[contenteditable="true"]');
+            editableElements.forEach(element => {{
+                element.addEventListener('blur', () => {{
+                    const state = loadState();
+                    if (!state.editedContent) {{
+                        state.editedContent = {{}};
+                    }}
+                    state.editedContent[element.id] = element.textContent;
+                    saveState(state);
+                }});
+            }});
+        }}
+
+        // Copier l'explication + PS dans le presse-papiers
+        function setupCopyButton() {{
+            const copyBtn = document.getElementById('copy-btn');
+            copyBtn.addEventListener('click', async () => {{
+                const explanation = document.getElementById('explanation').textContent;
+                const ps = document.getElementById('ps-text').textContent;
+                const textToCopy = explanation + '\\n\\n' + ps;
+
+                try {{
+                    await navigator.clipboard.writeText(textToCopy);
+
+                    // Feedback visuel
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = '✅ Copié !';
+                    copyBtn.classList.add('copied');
+
+                    setTimeout(() => {{
+                        copyBtn.textContent = originalText;
+                        copyBtn.classList.remove('copied');
+                    }}, 2000);
+                }} catch (err) {{
+                    console.error('Erreur lors de la copie:', err);
+                    copyBtn.textContent = '❌ Erreur';
+                    setTimeout(() => {{
+                        copyBtn.textContent = '📋 Copier Explication + PS';
+                    }}, 2000);
+                }}
+            }});
+        }}
+
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', () => {{
+            const state = loadState();
+            updateDisplay(state);
+            setupContentEditableSaving();
+            setupCopyButton();
+        }});
+    </script>
 </body>
 </html>"""
 
@@ -547,12 +802,12 @@ def main():
     # Sélectionner 4 post-scriptum aléatoires différents
     ps_list = random.sample(PS_VARIATIONS, 4)
 
-    # Liste des subreddits
+    # Liste des subreddits (ordre fixe comme demandé)
     subreddits = [
         ("r/FrenchImmersion", "r-frenchimmersion"),
-        ("r/learningfrench", "r-learningfrench"),
+        ("r/FrenchVocab", "r-frenchvocab"),
         ("r/learnfrench", "r-learnfrench"),
-        ("r/FrenchVocab", "r-frenchvocab")
+        ("r/learningfrench", "r-learningfrench")
     ]
 
     # Générer le slug et la date pour les noms de fichiers
@@ -568,56 +823,54 @@ def main():
     shutil.move(args.image2, image2_new_name)
     print(f"✓ Images renommées et déplacées dans img/")
 
-    # Générer 4 fichiers HTML (un par subreddit)
-    generated_files = []
-
-    for i, (subreddit_display, subreddit_slug) in enumerate(subreddits):
-        # Créer un lien raccourci unique pour ce subreddit
+    # Créer 4 liens raccourcis (un par subreddit)
+    print(f"⏳ Création des liens raccourcis...")
+    short_links = []
+    for i, (subreddit_display, _) in enumerate(subreddits):
         link_title = f"{text} - {subreddit_display}"
-        print(f"⏳ Création du lien pour {subreddit_display}...")
         short_link = create_short_link(link_title)
 
         if short_link.startswith("Error:"):
-            print(f"⚠️  {short_link}")
+            print(f"⚠️  {subreddit_display}: {short_link}")
         else:
-            print(f"✓ Lien créé : {short_link}")
+            print(f"✓ {subreddit_display}: {short_link}")
 
-        # Nom du fichier pour ce subreddit (dans le dossier posts/)
-        output_filename = f"posts/{text_slug}-{date_str}-{subreddit_slug}.html"
+        short_links.append(short_link)
 
-        # Convertir le PS en format Markdown avec lien intégré
-        ps_with_link = convert_ps_to_markdown_link(ps_list[i], short_link)
+    # Convertir les PS en format Markdown avec liens intégrés
+    ps_list_with_links = [
+        convert_ps_to_markdown_link(ps_list[i], short_links[i])
+        for i in range(4)
+    ]
 
-        # Adapter les chemins des images pour le dossier posts/ (ajouter ../)
-        image1_path_for_html = f"../{image1_new_name}"
-        image2_path_for_html = f"../{image2_new_name}"
+    # Adapter les chemins des images pour le dossier posts/ (ajouter ../)
+    image1_path_for_html = f"../{image1_new_name}"
+    image2_path_for_html = f"../{image2_new_name}"
 
-        # Générer le HTML avec les 2 sections (visible + cachée)
-        html_content = generate_html(
-            text,
-            image1_path_for_html,
-            translation1,  # traduction visible
-            translation1_hidden,  # traduction cachée
-            image2_path_for_html,
-            translation2,  # traduction visible
-            translation2_hidden,  # traduction cachée
-            explanation,
-            ps_with_link,  # PS avec lien Markdown intégré
-            short_link,
-            subreddit_display  # Nom du subreddit (avec r/)
-        )
+    # Générer UN SEUL fichier HTML avec gestion dynamique
+    output_filename = f"posts/{text_slug}-{date_str}.html"
 
-        # Sauvegarder le fichier
-        with open(output_filename, 'w', encoding='utf-8') as f:
-            f.write(html_content)
+    html_content = generate_html(
+        text,
+        date_str,
+        image1_path_for_html,
+        translation1,  # traduction visible
+        translation1_hidden,  # traduction cachée
+        image2_path_for_html,
+        translation2,  # traduction visible
+        translation2_hidden,  # traduction cachée
+        explanation,
+        ps_list_with_links,  # Liste des 4 PS avec liens Markdown
+        subreddits
+    )
 
-        generated_files.append(output_filename)
+    # Sauvegarder le fichier
+    with open(output_filename, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 
     # Message de confirmation
-    print(f"\n✓ 4 fichiers HTML générés :")
-    for filename in generated_files:
-        print(f"  - {filename}")
-    print(f"\n  Ouvre-les dans ton navigateur pour faire les screenshots!")
+    print(f"\n✓ Fichier HTML généré : {output_filename}")
+    print(f"  Ouvre-le dans ton navigateur pour commencer le workflow de publication!")
 
 
 if __name__ == '__main__':

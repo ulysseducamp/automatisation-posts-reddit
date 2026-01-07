@@ -29,15 +29,17 @@ Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentiss
 5. Génération explication (GPT-4o-mini) - 1 fois
    └─ Expression OU Mot → Explication pédagogique en anglais
 
-6. Génération multi-subreddit - 4 fois
+6. Génération fichier unique dynamique - 1 fois
    ├─ Sélection de 4 PS aléatoires différents
    ├─ Création de 4 liens Ablink uniques (API)
    ├─ Conversion PS en Markdown links [texte](url)
-   └─ Génération de 4 fichiers HTML (1 par subreddit, 2 sections par fichier)
+   └─ Génération de 1 fichier HTML avec JavaScript pour gestion multi-subreddit
 
 7. Output
-   └─ 4 fichiers HTML dans posts/ : {expression}-{date}-r-{subreddit}.html
-      - Chaque fichier : 2 sections (visible + cachée) avec titres séparés
+   └─ 1 fichier HTML dans posts/ : {expression}-{date}.html
+      - Interface dynamique avec localStorage
+      - 2 sections (visible + cachée) éditables inline
+      - Tracker avec checkboxes pour 4 subreddits
       - Images renommées et stockées dans img/
 ```
 
@@ -55,8 +57,8 @@ Script principal contenant toute la logique :
 - `bold_first_sentence(text)` : Met en gras première phrase de l'explication
 - `convert_ps_to_markdown_link(ps_text, link_url)` : Convertit [texte] en [texte](url) Markdown
 - `create_short_link(title)` : Crée lien raccourci via API Ablink
-- `generate_html(...)` : Crée HTML avec 2 sections (visible + cachée)
-- `main()` : Orchestration complète (génère 4 fichiers × 2 sections)
+- `generate_html(...)` : Crée HTML dynamique avec JavaScript inline, localStorage, et zones éditables
+- `main()` : Orchestration complète (génère 1 fichier unique)
 
 ### `requirements.txt`
 Dépendances Python :
@@ -140,23 +142,24 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 
 ### Layout (ordre d'affichage)
 
-**Ordre workflow-friendly :**
-1. Nom subreddit (Inter 16px) - Pour savoir où publier
+**Interface dynamique avec état persistant (localStorage) :**
+1. Nom subreddit dynamique (change selon checkbox cochée)
 2. Titre post "Your daily vocab' workout 🏋️ #" (Inter 32px gras)
-3. Section 1 - Version visible (avec titre propre)
-4. Section 2 - Version cachée (avec titre propre)
-5. Explication + PS + signature
+3. Section 1 - Version visible (traductions éditables inline)
+4. Section 2 - Version cachée (traductions éditables inline)
+5. Explication éditable + PS dynamique + bouton copier
+6. Tracker publication : 4 checkboxes (désactivées après cochage)
 
-**Chaque section (autonome pour screenshots) :**
-- Titre "What does '{mot}' mean here?" (Fira Mono 24px, #e0e0e0)
-- Images 1 & 2 (max-width: 562px, chemins relatifs ../img/)
-- Traductions (Inter 17px, #212121, fond blanc)
-- Footer "(Open...)" (Fira Mono 17px)
+**Zones éditables (contenteditable="true") :**
+- 4 traductions (2 visibles + 2 cachées) avec feedback visuel (bleu au focus)
+- Explication complète
+- Modifications auto-sauvegardées dans localStorage
 
-**Partie textuelle :**
-- Explication (première phrase en gras via Markdown **)
-- PS avec lien Markdown intégré [texte](url)
-- Signature "Happy learning!"
+**Fonctionnalités JavaScript :**
+- Clé localStorage unique : `reddit-post-{expression}-{date}`
+- Bouton "📋 Copier Explication + PS" avec feedback (devient "✅ Copié !")
+- Mise à jour auto du subreddit + PS quand checkbox cochée
+- Ordre subreddits fixe : FrenchImmersion → FrenchVocab → learnfrench → learningfrench
 
 ### Polices utilisées
 - **Fira Mono** (Regular 400) : Titre et footer
@@ -197,23 +200,20 @@ python3 generate.py \
 **Note :** Les arguments `--expression` et `--mot` sont mutuellement exclusifs (il faut utiliser l'un OU l'autre).
 
 ### Output
-**4 fichiers HTML** dans `posts/`, format : `posts/{text-slug}-{date}-r-{subreddit}.html`
+**1 fichier HTML** dans `posts/`, format : `posts/{text-slug}-{date}.html`
 
-Exemples pour `--expression "en déplacement"` :
-- `posts/en-deplacement-2026-01-03-r-frenchimmersion.html`
-- `posts/en-deplacement-2026-01-03-r-learningfrench.html`
-- `posts/en-deplacement-2026-01-03-r-learnfrench.html`
-- `posts/en-deplacement-2026-01-03-r-frenchvocab.html`
+Exemple pour `--expression "en déplacement"` :
+- `posts/en-deplacement-2026-01-03.html`
 
 **Images renommées** dans `img/` :
 - `img/en-deplacement-2026-01-03-scene1.png`
 - `img/en-deplacement-2026-01-03-scene2.png`
 
-Chaque HTML contient :
-- Nom subreddit + titre post (en haut pour workflow)
-- Section 1 : Traductions complètes (avec titre)
-- Section 2 : Traductions cachées (avec titre)
-- Explication (1ère phrase gras) + PS Markdown + signature
+Le fichier HTML contient :
+- Interface dynamique pour gérer 4 publications (1 par subreddit)
+- Zones éditables : traductions visibles, cachées, explication
+- Bouton copie rapide Explication + PS
+- État sauvegardé dans localStorage du navigateur
 
 ## Gestion d'erreurs
 
@@ -227,14 +227,14 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 
 ## Coûts estimés
 
-**Par génération (4 fichiers HTML × 2 sections) :**
+**Par génération (1 fichier HTML pour 4 subreddits) :**
 - 2 OCR (GPT-4o-mini) : ~$0.0003
 - 2 traductions (GPT-4o-mini) : ~$0.0001
 - 2 cachages (GPT-4o) : ~$0.001
 - 1 explication (GPT-4o-mini) : ~$0.0001
 - 4 liens Ablink : gratuit
 
-**Total : ~$0.0015** (moins de 2 centimes pour 4 posts)
+**Total : ~$0.0015** (moins de 2 centimes par expression)
 
 ## Fichiers exclus du repo (.gitignore)
 
@@ -246,11 +246,11 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 
 ## Subreddits cibles
 
-4 subreddits configurés (génération automatique de 4 fichiers HTML) :
-- `r/FrenchImmersion`
-- `r/learningfrench`
-- `r/learnfrench`
-- `r/FrenchVocab`
+4 subreddits configurés (ordre fixe dans l'interface) :
+1. `r/FrenchImmersion`
+2. `r/FrenchVocab`
+3. `r/learnfrench`
+4. `r/learningfrench`
 
 ## Évolutions futures possibles
 
@@ -264,28 +264,27 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 ## Notes de développement
 
 ### Historique des versions
-- **V1-V6** : Versions initiales (traductions, OCR, cachage, multi-subreddit)
-- **V7** : Images auto-renommées et organisées dans img/
-- **V8** : Titre post Reddit ajouté au HTML
-- **V9** : Réduction largeur HTML (562px) pour screenshots
-- **V10** : Liens Markdown intégrés [texte](url) dans PS
-- **V11** : Signature "Happy learning!" pour espacement
-- **V12** : Première phrase en gras + cleanup imports
-- **V13** : 4ème subreddit r/FrenchVocab ajouté
-- **V14** : Organisation posts/ + ordre workflow-friendly
-- **V15** : Titres dupliqués pour sections autonomes
+- **V1-V15** : Système multi-fichiers (4 HTML par génération)
+- **V16** : Refonte complète - fichier HTML unique dynamique
+  - Interface avec localStorage pour gérer 4 publications
+  - Zones éditables inline (contenteditable) pour traductions + explication
+  - Bouton "Copier Explication + PS" avec feedback visuel
+  - Checkboxes désactivées après cochage
+  - Mise à jour automatique subreddit + PS selon état
+  - Clé localStorage : `reddit-post-{expression}-{date}`
 
 ### Choix techniques importants
 - **OpenAI Vision (GPT-4o-mini)** : OCR précis vs Tesseract
 - **GPT-4o** : Cachage uniquement (précision 80%)
 - **Temperature=0** : Résultats déterministes
-- **2 sections autonomes** : Chaque section a son titre pour screenshots séparés
-- **4 fichiers/génération** : Anti-ban Reddit (4 subreddits, liens + PS uniques)
-- **Markdown links** : [texte](url) intégré dans PS pour copier-coller direct
-- **Organisation dossiers** : posts/ (HTML) + img/ (images renommées)
-- **Workflow-friendly** : Ordre HTML = ordre workflow (subreddit → titre → images → explication)
-- **9 variations PS** : Sélection aléatoire de 4 différents
-- **Première phrase gras** : Améliore lisibilité explication
+- **Fichier unique dynamique** : Réduit duplication, facilite éditions
+- **localStorage** : Persistance état sans serveur, clé unique expression+date
+- **contenteditable** : Édition inline native, UX simple
+- **Bouton copie** : Un clic pour Explication + PS (évite sélection manuelle)
+- **Checkboxes disabled** : Empêche décochage accidentel
+- **Markdown links** : [texte](url) pré-intégrés dans PS
+- **9 variations PS** : Sélection aléatoire de 4 différents par génération
+- **Ordre subreddits fixe** : FrenchImmersion → FrenchVocab → learnfrench → learningfrench
 
 ## Support et maintenance
 
