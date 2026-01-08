@@ -140,6 +140,38 @@ Phrase à traduire : {subtitle_french}"""}
         sys.exit(1)
 
 
+def translate_subtitle_natural(subtitle_french):
+    """Traduit un sous-titre français en anglais naturellement via OpenAI API"""
+    # Vérifier que la clé API est configurée
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("❌ Erreur : La clé API OpenAI n'est pas configurée.")
+        print("   Crée un fichier .env avec : OPENAI_API_KEY=ta-clé-api")
+        sys.exit(1)
+
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0,
+            messages=[
+                {"role": "user", "content": f"""Traduis cette phrase en anglais de manière naturelle et correcte.
+
+Réponds uniquement avec la traduction, sans guillemets ni explication.
+
+Phrase à traduire : {subtitle_french}"""}
+            ]
+        )
+        translation = response.choices[0].message.content.strip()
+        # Nettoyer les guillemets si présents
+        translation = translation.strip('"').strip("'")
+        return translation
+
+    except Exception as e:
+        print(f"❌ Erreur lors de l'appel API OpenAI : {e}")
+        sys.exit(1)
+
+
 def hide_text_in_translation(translation_english, subtitle_french, text_to_hide, is_expression):
     """Cache le mot/expression dans la traduction anglaise via OpenAI API (GPT-4o)"""
     # Vérifier que la clé API est configurée
@@ -779,11 +811,11 @@ def main():
 
     # Traduire les sous-titres via OpenAI
     print("⏳ Traduction du sous-titre 1...")
-    translation1 = translate_subtitle(subtitle1)
+    translation1 = translate_subtitle_natural(subtitle1)
     print(f"✓ Traduction : \"{translation1}\"")
 
     print("⏳ Traduction du sous-titre 2...")
-    translation2 = translate_subtitle(subtitle2)
+    translation2 = translate_subtitle_natural(subtitle2)
     print(f"✓ Traduction : \"{translation2}\"")
 
     # Cacher le mot/expression dans les traductions (une seule fois)

@@ -19,8 +19,8 @@ Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentiss
    └─ Image 2 → Texte français extrait
 
 3. Traduction (GPT-4o-mini) - 1 fois
-   ├─ Texte 1 → Traduction anglaise littérale
-   └─ Texte 2 → Traduction anglaise littérale
+   ├─ Texte 1 → Traduction anglaise naturelle
+   └─ Texte 2 → Traduction anglaise naturelle
 
 4. Cachage (GPT-4o) - 1 fois
    ├─ Traduction 1 → Version cachée avec underscores
@@ -51,7 +51,8 @@ Script principal contenant toute la logique :
 **Fonctions principales :**
 - `slugify(text)` : Convertit texte en slug pour noms de fichiers
 - `extract_subtitle_from_image(image_path)` : OCR via OpenAI Vision (GPT-4o-mini)
-- `translate_subtitle(subtitle_french)` : Traduction FR → EN littérale (GPT-4o-mini)
+- `translate_subtitle(subtitle_french)` : Traduction FR → EN littérale (GPT-4o-mini) [obsolète, conservée]
+- `translate_subtitle_natural(subtitle_french)` : Traduction FR → EN naturelle (GPT-4o-mini) [utilisée]
 - `hide_text_in_translation(translation_en, subtitle_fr, text, is_expression)` : Cache mot/expression avec underscores (GPT-4o)
 - `generate_explanation(text, is_expression=True)` : Génère explication pédagogique (GPT-4o-mini)
 - `bold_first_sentence(text)` : Met en gras première phrase de l'explication
@@ -93,19 +94,18 @@ Documentation utilisateur avec instructions d'installation et d'utilisation.
 Réponds uniquement avec le texte extrait, sans aucun commentaire ni explication."
 ```
 
-**Traduction (avec temperature=0) :**
+**Traduction naturelle (avec temperature=0) :**
 ```
-User: "traduis cette phrase en anglais (littéralement)
+User: "Traduis cette phrase en anglais de manière naturelle et correcte.
 
-dans ta réponse, écris uniquement la traduction, rien d'autre, pas d'explication,
-juste la traduction. Ne mets pas de guillemets autour de la traduction.
-
-Pour "Ça vous dérange pas la fumée"
-une bonne traduction littérale est "It doesn't bother you the smoke."
-
-L'idée c'est d'avoir une structure de phrase similaire avec à peu près les mêmes mots.
+Réponds uniquement avec la traduction, sans guillemets ni explication.
 
 Phrase à traduire : {texte}"
+```
+
+**Traduction littérale [obsolète, conservée dans le code] :**
+```
+Prompt mot-à-mot avec structure similaire. Non utilisé actuellement.
 ```
 
 **Explication - EXPRESSION (avec temperature=0) :**
@@ -272,10 +272,14 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
   - Checkboxes désactivées après cochage
   - Mise à jour automatique subreddit + PS selon état
   - Clé localStorage : `reddit-post-{expression}-{date}`
+- **V17** : Traductions naturelles par défaut
+  - Ajout `translate_subtitle_natural()` pour traductions correctes en anglais
+  - Fonction littérale conservée pour faciliter retour arrière si besoin
 
 ### Choix techniques importants
 - **OpenAI Vision (GPT-4o-mini)** : OCR précis vs Tesseract
 - **GPT-4o** : Cachage uniquement (précision 80%)
+- **Traductions naturelles** : Anglais correct vs littéral (meilleure réception utilisateurs)
 - **Temperature=0** : Résultats déterministes
 - **Fichier unique dynamique** : Réduit duplication, facilite éditions
 - **localStorage** : Persistance état sans serveur, clé unique expression+date
