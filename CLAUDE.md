@@ -147,7 +147,7 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 2. Titre post "Your daily vocab' workout 🏋️ #" (Inter 32px gras)
 3. Section 1 - Version visible (traductions éditables inline)
 4. Section 2 - Version cachée (traductions éditables inline)
-5. Explication éditable + PS dynamique + bouton copier
+5. Explication éditable + PS dynamique + "Happy learning!" + bouton copier
 6. Tracker publication : 4 checkboxes (désactivées après cochage)
 
 **Zones éditables (contenteditable="true") :**
@@ -157,7 +157,7 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 
 **Fonctionnalités JavaScript :**
 - Clé localStorage unique : `reddit-post-{expression}-{date}`
-- Bouton "📋 Copier Explication + PS" avec feedback (devient "✅ Copié !")
+- Bouton "📋 Copier Explication + PS" copie : Explication + PS + "Happy learning!" avec feedback (devient "✅ Copié !")
 - Mise à jour auto du subreddit + PS quand checkbox cochée
 - Ordre subreddits fixe : FrenchImmersion → FrenchVocab → learnfrench → learningfrench
 
@@ -275,6 +275,9 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 - **V17** : Traductions naturelles par défaut
   - Ajout `translate_subtitle_natural()` pour traductions correctes en anglais
   - Fonction littérale conservée pour faciliter retour arrière si besoin
+- **V18** : Repositionnement "Happy learning!"
+  - "Happy learning!" placé après PS et avant bouton (meilleur format Reddit)
+  - Bouton copie inclut maintenant : Explication + PS + "Happy learning!"
 
 ### Choix techniques importants
 - **OpenAI Vision (GPT-4o-mini)** : OCR précis vs Tesseract
@@ -284,7 +287,8 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 - **Fichier unique dynamique** : Réduit duplication, facilite éditions
 - **localStorage** : Persistance état sans serveur, clé unique expression+date
 - **contenteditable** : Édition inline native, UX simple
-- **Bouton copie** : Un clic pour Explication + PS (évite sélection manuelle)
+- **Bouton copie** : Un clic pour Explication + PS + "Happy learning!" (évite sélection manuelle)
+- **"Happy learning!" après PS** : Format optimal pour post Reddit commentaire
 - **Checkboxes disabled** : Empêche décochage accidentel
 - **Markdown links** : [texte](url) pré-intégrés dans PS
 - **9 variations PS** : Sélection aléatoire de 4 différents par génération

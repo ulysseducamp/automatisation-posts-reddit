@@ -612,11 +612,11 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         <!-- PS (dynamique) -->
         <div class="explanation" id="ps-text"></div>
 
-        <!-- BOUTON COPIER -->
-        <button class="copy-btn" id="copy-btn">📋 Copier Explication + PS</button>
-
         <!-- SIGNATURE -->
         <div class="explanation">Happy learning!</div>
+
+        <!-- BOUTON COPIER -->
+        <button class="copy-btn" id="copy-btn">📋 Copier Explication + PS</button>
 
         <!-- TRACKER DE PUBLICATION -->
         <div class="tracker">
@@ -727,13 +727,13 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             }});
         }}
 
-        // Copier l'explication + PS dans le presse-papiers
+        // Copier l'explication + PS + Happy learning! dans le presse-papiers
         function setupCopyButton() {{
             const copyBtn = document.getElementById('copy-btn');
             copyBtn.addEventListener('click', async () => {{
                 const explanation = document.getElementById('explanation').textContent;
                 const ps = document.getElementById('ps-text').textContent;
-                const textToCopy = explanation + '\\n\\n' + ps;
+                const textToCopy = explanation + '\\n\\n' + ps + '\\n\\nHappy learning!';
 
                 try {{
                     await navigator.clipboard.writeText(textToCopy);
