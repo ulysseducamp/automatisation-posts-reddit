@@ -515,18 +515,25 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             cursor: pointer;
         }}
 
-        .tracker-item input[type="checkbox"]:disabled {{
-            cursor: not-allowed;
-            opacity: 0.5;
-        }}
-
         .tracker-item label {{
             cursor: pointer;
+            padding: 8px 12px;
+            margin: -8px -12px;
+            border-radius: 6px;
+            border-left: 4px solid transparent;
+            transition: all 0.2s ease;
+            display: inline-block;
         }}
 
-        .tracker-item input[type="checkbox"]:disabled + label {{
-            cursor: not-allowed;
-            opacity: 0.5;
+        .tracker-item label:hover {{
+            background-color: #f5f5f5;
+        }}
+
+        .tracker-item label.selected {{
+            background-color: #E3F2FD;
+            border-left-color: #1976D2;
+            color: #1976D2;
+            font-weight: 500;
         }}
 
         [contenteditable="true"] {{
@@ -636,7 +643,7 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         // État par défaut
         const DEFAULT_STATE = {{
             published: [false, false, false, false],
-            currentIndex: 0,
+            selectedSubredditIndex: 0,
             editedContent: {{}}
         }};
 
@@ -651,21 +658,36 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         }}
 
+        // Trouver le prochain subreddit non publié
+        function findNextUnpublishedIndex(state) {{
+            const index = state.published.findIndex(pub => pub === false);
+            return index !== -1 ? index : SUBREDDITS.length - 1;
+        }}
+
+        // Sélectionner un subreddit
+        function selectSubreddit(index) {{
+            const state = loadState();
+            state.selectedSubredditIndex = index;
+            saveState(state);
+            updateDisplay(state);
+        }}
+
         // Mettre à jour l'affichage
         function updateDisplay(state) {{
-            // Trouver le premier subreddit non publié
-            let currentIndex = state.published.findIndex(pub => pub === false);
-            if (currentIndex === -1) {{
-                // Tous publiés, rester sur le dernier
-                currentIndex = SUBREDDITS.length - 1;
+            // Vérifier si le subreddit sélectionné est coché
+            // Si oui, auto-sélectionner le prochain non-coché
+            if (state.published[state.selectedSubredditIndex]) {{
+                state.selectedSubredditIndex = findNextUnpublishedIndex(state);
+                saveState(state);
             }}
-            state.currentIndex = currentIndex;
+
+            const selectedIndex = state.selectedSubredditIndex;
 
             // Mettre à jour le nom du subreddit
-            document.getElementById('current-subreddit').textContent = SUBREDDITS[currentIndex];
+            document.getElementById('current-subreddit').textContent = SUBREDDITS[selectedIndex];
 
             // Mettre à jour le PS
-            document.getElementById('ps-text').textContent = PS_VARIATIONS[currentIndex];
+            document.getElementById('ps-text').textContent = PS_VARIATIONS[selectedIndex];
 
             // Créer/mettre à jour les checkboxes
             const trackerList = document.getElementById('tracker-list');
@@ -679,12 +701,23 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
                 checkbox.type = 'checkbox';
                 checkbox.id = `checkbox-${{index}}`;
                 checkbox.checked = state.published[index];
-                checkbox.disabled = state.published[index]; // Désactiver si déjà publié
+                // Permettre de décocher (ne plus désactiver)
                 checkbox.addEventListener('change', () => handleCheckboxChange(index));
 
                 const label = document.createElement('label');
                 label.htmlFor = `checkbox-${{index}}`;
                 label.textContent = subreddit;
+
+                // Ajouter la classe selected si c'est le subreddit actuellement sélectionné
+                if (index === selectedIndex) {{
+                    label.classList.add('selected');
+                }}
+
+                // Rendre le label cliquable pour sélectionner le subreddit
+                label.addEventListener('click', (e) => {{
+                    e.preventDefault();
+                    selectSubreddit(index);
+                }});
 
                 item.appendChild(checkbox);
                 item.appendChild(label);
@@ -702,10 +735,17 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             }}
         }}
 
-        // Gérer le changement de checkbox
+        // Gérer le changement de checkbox (tracking seulement)
         function handleCheckboxChange(index) {{
             const state = loadState();
-            state.published[index] = true;
+            // Toggle l'état (permettre de décocher)
+            state.published[index] = !state.published[index];
+
+            // Si on coche le subreddit actuellement sélectionné,
+            // auto-sélectionner le prochain non-coché
+            if (state.published[index] && index === state.selectedSubredditIndex) {{
+                state.selectedSubredditIndex = findNextUnpublishedIndex(state);
+            }}
 
             // Sauvegarder et mettre à jour
             saveState(state);

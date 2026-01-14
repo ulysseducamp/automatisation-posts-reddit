@@ -37,9 +37,10 @@ Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentiss
 
 7. Output
    └─ 1 fichier HTML dans posts/ : {expression}-{date}.html
-      - Interface dynamique avec localStorage
+      - Interface dynamique avec localStorage (état + selectedSubredditIndex)
+      - Sélection manuelle subreddit (clic label → surlignage + change PS)
+      - Checkboxes indépendantes (tracking visuel, togglables)
       - 2 sections (visible + cachée) éditables inline
-      - Tracker avec checkboxes pour 4 subreddits
       - Images renommées et stockées dans img/
 ```
 
@@ -143,12 +144,12 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 ### Layout (ordre d'affichage)
 
 **Interface dynamique avec état persistant (localStorage) :**
-1. Nom subreddit dynamique (change selon checkbox cochée)
+1. Nom subreddit dynamique (change selon label sélectionné)
 2. Titre post "Your daily vocab' workout 🏋️ #" (Inter 32px gras)
 3. Section 1 - Version visible (traductions éditables inline)
 4. Section 2 - Version cachée (traductions éditables inline)
 5. Explication éditable + PS dynamique + "Happy learning!" + bouton copier
-6. Tracker publication : 4 checkboxes (désactivées après cochage)
+6. Tracker publication : 4 labels cliquables + 4 checkboxes togglables
 
 **Zones éditables (contenteditable="true") :**
 - 4 traductions (2 visibles + 2 cachées) avec feedback visuel (bleu au focus)
@@ -156,9 +157,11 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 - Modifications auto-sauvegardées dans localStorage
 
 **Fonctionnalités JavaScript :**
-- Clé localStorage unique : `reddit-post-{expression}-{date}`
-- Bouton "📋 Copier Explication + PS" copie : Explication + PS + "Happy learning!" avec feedback (devient "✅ Copié !")
-- Mise à jour auto du subreddit + PS quand checkbox cochée
+- Clé localStorage : `reddit-post-{expression}-{date}` (state: published[], selectedSubredditIndex, editedContent)
+- Clic label subreddit → Sélectionne (surlignage bleu) + Change nom + PS
+- Checkbox → Toggle tracking visuel (indépendant de sélection)
+- Auto-sélection prochain non-coché si subreddit sélectionné coché
+- Bouton "📋 Copier Explication + PS" copie : Explication + PS + "Happy learning!" avec feedback
 - Ordre subreddits fixe : FrenchImmersion → FrenchVocab → learnfrench → learningfrench
 
 ### Polices utilisées
@@ -278,6 +281,12 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 - **V18** : Repositionnement "Happy learning!"
   - "Happy learning!" placé après PS et avant bouton (meilleur format Reddit)
   - Bouton copie inclut maintenant : Explication + PS + "Happy learning!"
+- **V19** : Sélection manuelle de subreddit + tracking indépendant
+  - Clic sur nom subreddit → Sélection + surlignage (fond bleu #E3F2FD + bordure #1976D2)
+  - Checkbox découplée → Tracking visuel uniquement, cochable/décochable librement
+  - Persistance selectedSubredditIndex dans localStorage
+  - Auto-sélection prochain non-coché si subreddit sélectionné est coché
+  - Évite spam detection Reddit (rotation manuelle vs 4 posts simultanés/subreddit)
 
 ### Choix techniques importants
 - **OpenAI Vision (GPT-4o-mini)** : OCR précis vs Tesseract
@@ -289,10 +298,12 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 - **contenteditable** : Édition inline native, UX simple
 - **Bouton copie** : Un clic pour Explication + PS + "Happy learning!" (évite sélection manuelle)
 - **"Happy learning!" après PS** : Format optimal pour post Reddit commentaire
-- **Checkboxes disabled** : Empêche décochage accidentel
+- **Sélection manuelle subreddit** : Clic sur label → change PS, checkbox = tracking only
+- **Checkboxes togglables** : Correction erreurs possible (cochable/décochable)
 - **Markdown links** : [texte](url) pré-intégrés dans PS
 - **9 variations PS** : Sélection aléatoire de 4 différents par génération
 - **Ordre subreddits fixe** : FrenchImmersion → FrenchVocab → learnfrench → learningfrench
+- **Rotation posts** : Évite spam Reddit (répartir publications sur différents subreddits)
 
 ## Support et maintenance
 
