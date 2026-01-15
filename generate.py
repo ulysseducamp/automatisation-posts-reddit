@@ -16,6 +16,7 @@ import requests
 import shutil
 from openai import OpenAI
 from dotenv import load_dotenv
+from PIL import Image
 
 # Charger les variables d'environnement depuis .env
 load_dotenv()
@@ -100,6 +101,91 @@ def extract_subtitle_from_image(image_path):
     except Exception as e:
         print(f"❌ Erreur lors de l'extraction du texte de {image_path} : {e}")
         sys.exit(1)
+
+
+def extract_movie_title(image_path):
+    """Extrait le titre du film visible en bas de l'image via OpenAI Vision API"""
+    # Vérifier que la clé API est configurée
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("❌ Erreur : La clé API OpenAI n'est pas configurée.")
+        print("   Crée un fichier .env avec : OPENAI_API_KEY=ta-clé-api")
+        sys.exit(1)
+
+    try:
+        # Vérifier que l'image existe
+        if not os.path.exists(image_path):
+            print(f"❌ Erreur : Image introuvable : {image_path}")
+            sys.exit(1)
+
+        # Encoder l'image en base64
+        with open(image_path, "rb") as image_file:
+            base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+
+        # Appel API OpenAI avec vision
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Extract ONLY the movie title visible in the bottom right corner of this image. The format should be: Movie Name (Year). Respond only with the title, without any comments or explanation."
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        )
+
+        title = response.choices[0].message.content.strip()
+
+        # Nettoyer les guillemets si présents
+        title = title.strip('"').strip("'")
+
+        # Vérifier qu'un titre a été détecté
+        if not title:
+            print(f"⚠️  Attention : Aucun titre de film détecté dans {image_path}")
+            return "Unknown Movie"
+
+        return title
+
+    except Exception as e:
+        print(f"⚠️  Attention : Erreur lors de l'extraction du titre de {image_path} : {e}")
+        return "Unknown Movie"
+
+
+def crop_image_bottom(image_path, output_path, pixels_to_remove=50):
+    """Rogne une image en enlevant les pixels du bas"""
+    try:
+        # Ouvrir l'image
+        img = Image.open(image_path)
+        width, height = img.size
+
+        # Vérifier que le rognage est possible
+        if pixels_to_remove >= height:
+            print(f"⚠️  Attention : Impossible de rogner {pixels_to_remove}px sur une image de {height}px de hauteur")
+            # Copier l'image telle quelle
+            shutil.copy(image_path, output_path)
+            return
+
+        # Rogner l'image (enlever du bas)
+        cropped = img.crop((0, 0, width, height - pixels_to_remove))
+
+        # Sauvegarder l'image rognée
+        cropped.save(output_path)
+
+    except Exception as e:
+        print(f"❌ Erreur lors du rognage de {image_path} : {e}")
+        # En cas d'erreur, copier l'image telle quelle
+        shutil.copy(image_path, output_path)
 
 
 def translate_subtitle(subtitle_french):
@@ -373,7 +459,7 @@ def create_short_link(title):
         return "Error: Unable to generate link"
 
 
-def generate_html(expression, date_str, image1_path, translation1_visible, translation1_hidden, image2_path, translation2_visible, translation2_hidden, explanation, ps_list, subreddits):
+def generate_html(expression, date_str, image1_path, translation1_visible, translation1_hidden, image2_path, translation2_visible, translation2_hidden, explanation, ps_list, subreddits, movie_title1, movie_title2):
     """Génère le HTML complet avec JavaScript pour gestion dynamique des subreddits"""
 
     # Convertir les listes Python en JSON pour JavaScript
@@ -583,6 +669,25 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         .copy-btn.copied {{
             background-color: #2196F3;
         }}
+
+        .image-container {{
+            position: relative;
+            width: 100%;
+            display: block;
+        }}
+
+        .movie-title-overlay {{
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #212121;
+            color: #ffffff;
+            padding: 5px;
+            font-family: 'Fira Mono', monospace;
+            font-size: 8px;
+            font-weight: 400;
+            pointer-events: none;
+        }}
     </style>
 </head>
 <body>
@@ -596,9 +701,15 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         <!-- SECTION 1: VERSION VISIBLE -->
         <div class="title">What does "{expression}" mean here?</div>
         <div class="container">
-            <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
+            <div class="image-container">
+                <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
+                <div class="movie-title-overlay">{movie_title1}</div>
+            </div>
             <div class="translation-box" contenteditable="true" id="translation1-visible">{translation1_visible}</div>
-            <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
+            <div class="image-container">
+                <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
+                <div class="movie-title-overlay">{movie_title2}</div>
+            </div>
             <div class="translation-box" contenteditable="true" id="translation2-visible">{translation2_visible}</div>
             <div class="footer">(Open the post to reveal the explanation)</div>
         </div>
@@ -606,9 +717,15 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         <!-- SECTION 2: VERSION CACHÉE -->
         <div class="title">What does "{expression}" mean here?</div>
         <div class="container">
-            <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
+            <div class="image-container">
+                <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
+                <div class="movie-title-overlay">{movie_title1}</div>
+            </div>
             <div class="translation-box" contenteditable="true" id="translation1-hidden">{translation1_hidden}</div>
-            <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
+            <div class="image-container">
+                <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
+                <div class="movie-title-overlay">{movie_title2}</div>
+            </div>
             <div class="translation-box" contenteditable="true" id="translation2-hidden">{translation2_hidden}</div>
             <div class="footer">(Open the post to reveal the explanation)</div>
         </div>
@@ -840,7 +957,16 @@ def main():
         is_expression = False
         text_type = "mot"
 
-    # Extraire les sous-titres via OpenAI Vision
+    # ÉTAPE 1: Extraire les titres des films (depuis images sources)
+    print("⏳ Extraction titre du film (image 1)...")
+    movie_title1 = extract_movie_title(args.image1)
+    print(f"✓ Titre extrait : \"{movie_title1}\"")
+
+    print("⏳ Extraction titre du film (image 2)...")
+    movie_title2 = extract_movie_title(args.image2)
+    print(f"✓ Titre extrait : \"{movie_title2}\"")
+
+    # ÉTAPE 2: Extraire les sous-titres via OpenAI Vision
     print("⏳ Extraction texte image 1...")
     subtitle1 = extract_subtitle_from_image(args.image1)
     print(f"✓ Texte extrait : \"{subtitle1}\"")
@@ -886,14 +1012,14 @@ def main():
     text_slug = slugify(text)
     date_str = datetime.now().strftime('%Y-%m-%d')
 
-    # Renommer les images avec des noms uniques et les déplacer dans img/
+    # Rogner les images (enlever 50px du bas) et les sauvegarder dans img/
     image1_new_name = f"img/{text_slug}-{date_str}-scene1.png"
     image2_new_name = f"img/{text_slug}-{date_str}-scene2.png"
 
-    print(f"⏳ Renommage des images...")
-    shutil.move(args.image1, image1_new_name)
-    shutil.move(args.image2, image2_new_name)
-    print(f"✓ Images renommées et déplacées dans img/")
+    print(f"⏳ Rognage et sauvegarde des images...")
+    crop_image_bottom(args.image1, image1_new_name, pixels_to_remove=40)
+    crop_image_bottom(args.image2, image2_new_name, pixels_to_remove=40)
+    print(f"✓ Images rognées et sauvegardées dans img/")
 
     # Créer 4 liens raccourcis (un par subreddit)
     print(f"⏳ Création des liens raccourcis...")
@@ -933,7 +1059,9 @@ def main():
         translation2_hidden,  # traduction cachée
         explanation,
         ps_list_with_links,  # Liste des 4 PS avec liens Markdown
-        subreddits
+        subreddits,
+        movie_title1,  # Titre du film (image 1)
+        movie_title2   # Titre du film (image 2)
     )
 
     # Sauvegarder le fichier

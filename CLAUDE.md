@@ -11,37 +11,46 @@ Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentiss
 ```
 1. Input utilisateur
    ├─ Expression française OU mot français (ex: "en déplacement" ou "manger")
-   ├─ Image 1 (capture d'écran avec sous-titres)
-   └─ Image 2 (capture d'écran avec sous-titres)
+   ├─ Image 1 (capture d'écran avec sous-titres + titre film)
+   └─ Image 2 (capture d'écran avec sous-titres + titre film)
 
-2. Extraction OCR (GPT-4o-mini) - 1 fois
+2. Extraction titres films (GPT-4o-mini Vision) - 1 fois
+   ├─ Image 1 → Titre film extrait (ex: "La cage dorée (2013)")
+   └─ Image 2 → Titre film extrait
+
+3. Extraction sous-titres OCR (GPT-4o-mini) - 1 fois
    ├─ Image 1 → Texte français extrait
    └─ Image 2 → Texte français extrait
 
-3. Traduction (GPT-4o-mini) - 1 fois
+4. Traduction (GPT-4o-mini) - 1 fois
    ├─ Texte 1 → Traduction anglaise naturelle
    └─ Texte 2 → Traduction anglaise naturelle
 
-4. Cachage (GPT-4o) - 1 fois
+5. Cachage (GPT-4o) - 1 fois
    ├─ Traduction 1 → Version cachée avec underscores
    └─ Traduction 2 → Version cachée avec underscores
 
-5. Génération explication (GPT-4o-mini) - 1 fois
+6. Génération explication (GPT-4o-mini) - 1 fois
    └─ Expression OU Mot → Explication pédagogique en anglais
 
-6. Génération fichier unique dynamique - 1 fois
+7. Rognage images - 1 fois
+   ├─ Image 1 → Rognage 40px du bas (enlève titre + "Download video")
+   └─ Image 2 → Rognage 40px du bas
+
+8. Génération fichier unique dynamique - 1 fois
    ├─ Sélection de 4 PS aléatoires différents
    ├─ Création de 4 liens Ablink uniques (API)
    ├─ Conversion PS en Markdown links [texte](url)
    └─ Génération de 1 fichier HTML avec JavaScript pour gestion multi-subreddit
 
-7. Output
+9. Output
    └─ 1 fichier HTML dans posts/ : {expression}-{date}.html
       - Interface dynamique avec localStorage (état + selectedSubredditIndex)
       - Sélection manuelle subreddit (clic label → surlignage + change PS)
       - Checkboxes indépendantes (tracking visuel, togglables)
       - 2 sections (visible + cachée) éditables inline
-      - Images renommées et stockées dans img/
+      - Images rognées et stockées dans img/
+      - Overlays titre film (coin haut-droit, 8px Fira Mono, 5px padding, fond #212121)
 ```
 
 ## Fichiers du projet
@@ -51,7 +60,9 @@ Script principal contenant toute la logique :
 
 **Fonctions principales :**
 - `slugify(text)` : Convertit texte en slug pour noms de fichiers
-- `extract_subtitle_from_image(image_path)` : OCR via OpenAI Vision (GPT-4o-mini)
+- `extract_movie_title(image_path)` : Extrait titre film en bas-droit via OpenAI Vision (GPT-4o-mini)
+- `extract_subtitle_from_image(image_path)` : OCR sous-titres via OpenAI Vision (GPT-4o-mini)
+- `crop_image_bottom(image_path, output_path, pixels_to_remove=40)` : Rogne image (Pillow)
 - `translate_subtitle(subtitle_french)` : Traduction FR → EN littérale (GPT-4o-mini) [obsolète, conservée]
 - `translate_subtitle_natural(subtitle_french)` : Traduction FR → EN naturelle (GPT-4o-mini) [utilisée]
 - `hide_text_in_translation(translation_en, subtitle_fr, text, is_expression)` : Cache mot/expression avec underscores (GPT-4o)
@@ -59,7 +70,7 @@ Script principal contenant toute la logique :
 - `bold_first_sentence(text)` : Met en gras première phrase de l'explication
 - `convert_ps_to_markdown_link(ps_text, link_url)` : Convertit [texte] en [texte](url) Markdown
 - `create_short_link(title)` : Crée lien raccourci via API Ablink
-- `generate_html(...)` : Crée HTML dynamique avec JavaScript inline, localStorage, et zones éditables
+- `generate_html(...)` : Crée HTML dynamique avec overlays titres films, JavaScript, localStorage
 - `main()` : Orchestration complète (génère 1 fichier unique)
 
 ### `requirements.txt`
@@ -67,6 +78,7 @@ Dépendances Python :
 - `openai>=1.0.0` : SDK OpenAI pour Vision API et traductions
 - `python-dotenv>=1.0.0` : Gestion des variables d'environnement
 - `requests>=2.31.0` : Appels HTTP pour API Ablink
+- `Pillow>=10.0.0` : Traitement d'images (rognage)
 
 ### `.env` (non versionné)
 Contient les clés API :
@@ -89,7 +101,13 @@ Documentation utilisateur avec instructions d'installation et d'utilisation.
 
 ### Prompts système
 
-**Extraction OCR :**
+**Extraction titre film :**
+```
+"Extract ONLY the movie title visible in the bottom right corner of this image.
+The format should be: Movie Name (Year). Respond only with the title, without any comments or explanation."
+```
+
+**Extraction sous-titres OCR :**
 ```
 "Extrait UNIQUEMENT le texte français des sous-titres visibles dans cette image.
 Réponds uniquement avec le texte extrait, sans aucun commentaire ni explication."
@@ -208,13 +226,14 @@ python3 generate.py \
 Exemple pour `--expression "en déplacement"` :
 - `posts/en-deplacement-2026-01-03.html`
 
-**Images renommées** dans `img/` :
-- `img/en-deplacement-2026-01-03-scene1.png`
-- `img/en-deplacement-2026-01-03-scene2.png`
+**Images rognées** dans `img/` :
+- `img/en-deplacement-2026-01-03-scene1.png` (40px enlevés du bas)
+- `img/en-deplacement-2026-01-03-scene2.png` (40px enlevés du bas)
 
 Le fichier HTML contient :
 - Interface dynamique pour gérer 4 publications (1 par subreddit)
 - Zones éditables : traductions visibles, cachées, explication
+- Overlays titres films (coin haut-droit, auto-extraits via OCR)
 - Bouton copie rapide Explication + PS
 - État sauvegardé dans localStorage du navigateur
 
@@ -231,13 +250,14 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 ## Coûts estimés
 
 **Par génération (1 fichier HTML pour 4 subreddits) :**
-- 2 OCR (GPT-4o-mini) : ~$0.0003
+- 2 OCR titres films (GPT-4o-mini) : ~$0.0003
+- 2 OCR sous-titres (GPT-4o-mini) : ~$0.0003
 - 2 traductions (GPT-4o-mini) : ~$0.0001
 - 2 cachages (GPT-4o) : ~$0.001
 - 1 explication (GPT-4o-mini) : ~$0.0001
 - 4 liens Ablink : gratuit
 
-**Total : ~$0.0015** (moins de 2 centimes par expression)
+**Total : ~$0.0018** (moins de 2 centimes par expression)
 
 ## Fichiers exclus du repo (.gitignore)
 
@@ -287,10 +307,18 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
   - Persistance selectedSubredditIndex dans localStorage
   - Auto-sélection prochain non-coché si subreddit sélectionné est coché
   - Évite spam detection Reddit (rotation manuelle vs 4 posts simultanés/subreddit)
+- **V20** : Crédits films automatiques avec overlays
+  - Extraction automatique titres films via OCR (GPT-4o-mini Vision)
+  - Rognage automatique images (40px du bas, enlève titre source + "Download video")
+  - Overlays CSS : coin haut-droit, Fira Mono 8px, padding 5px, fond #212121 opaque
+  - Crédits respectent droits d'auteur + intérêt pédagogique utilisateurs
+  - Ajout dépendance Pillow pour traitement images
+  - Fix espaces blancs : display block sur .image-container
 
 ### Choix techniques importants
-- **OpenAI Vision (GPT-4o-mini)** : OCR précis vs Tesseract
+- **OpenAI Vision (GPT-4o-mini)** : OCR précis vs Tesseract (sous-titres + titres films)
 - **GPT-4o** : Cachage uniquement (précision 80%)
+- **Pillow** : Rognage images (40px, enlève titre source avant sauvegarde)
 - **Traductions naturelles** : Anglais correct vs littéral (meilleure réception utilisateurs)
 - **Temperature=0** : Résultats déterministes
 - **Fichier unique dynamique** : Réduit duplication, facilite éditions
@@ -304,6 +332,8 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 - **9 variations PS** : Sélection aléatoire de 4 différents par génération
 - **Ordre subreddits fixe** : FrenchImmersion → FrenchVocab → learnfrench → learningfrench
 - **Rotation posts** : Évite spam Reddit (répartir publications sur différents subreddits)
+- **Overlays films** : Crédits automatiques (droits d'auteur + engagement utilisateurs)
+- **display: block** : Élimine espaces blancs entre images et blocs (vs inline-block)
 
 ## Support et maintenance
 
