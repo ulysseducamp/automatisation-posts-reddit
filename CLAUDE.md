@@ -163,11 +163,12 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 
 **Interface dynamique avec état persistant (localStorage) :**
 1. Nom subreddit dynamique (change selon label sélectionné)
-2. Titre post "Your daily vocab' workout 🏋️ #" (Inter 32px gras)
-3. Section 1 - Version visible (traductions éditables inline)
-4. Section 2 - Version cachée (traductions éditables inline)
-5. Explication éditable + PS dynamique + "Happy learning!" + bouton copier
-6. Tracker publication : 4 labels cliquables + 4 checkboxes togglables
+2. Titre post dynamique "Learn French: what does "[expression/mot]" mean here?" (Inter 32px gras)
+3. Bouton "📋 Copier le titre" pour copie rapide du titre Reddit
+4. Section 1 - Version visible (traductions éditables inline)
+5. Section 2 - Version cachée (traductions éditables inline)
+6. Explication éditable + PS dynamique + "Happy learning!" + bouton copier
+7. Tracker publication : 4 labels cliquables + 4 checkboxes togglables
 
 **Zones éditables (contenteditable="true") :**
 - 4 traductions (2 visibles + 2 cachées) avec feedback visuel (bleu au focus)
@@ -179,6 +180,7 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 - Clic label subreddit → Sélectionne (surlignage bleu) + Change nom + PS
 - Checkbox → Toggle tracking visuel (indépendant de sélection)
 - Auto-sélection prochain non-coché si subreddit sélectionné coché
+- Bouton "📋 Copier le titre" copie le titre pour Reddit
 - Bouton "📋 Copier Explication + PS" copie : Explication + PS + "Happy learning!" avec feedback
 - Ordre subreddits fixe : FrenchImmersion → FrenchVocab → learnfrench → learningfrench
 
@@ -314,6 +316,11 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
   - Crédits respectent droits d'auteur + intérêt pédagogique utilisateurs
   - Ajout dépendance Pillow pour traitement images
   - Fix espaces blancs : display block sur .image-container
+- **V21** : Titre dynamique SEO-friendly
+  - Nouveau format : "Learn French: what does "[expression/mot]" mean here?"
+  - Remplace ancien "Your daily vocab' workout 🏋️ #" (répétitif, non SEO)
+  - Bouton "📋 Copier le titre" pour copie rapide vers Reddit
+  - Améliore trouvabilité Google et référencement naturel des posts
 
 ### Choix techniques importants
 - **OpenAI Vision (GPT-4o-mini)** : OCR précis vs Tesseract (sous-titres + titres films)
@@ -324,6 +331,8 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 - **Fichier unique dynamique** : Réduit duplication, facilite éditions
 - **localStorage** : Persistance état sans serveur, clé unique expression+date
 - **contenteditable** : Édition inline native, UX simple
+- **Titre dynamique SEO** : Unique par expression/mot → indexation Google + trouvabilité
+- **Bouton copie titre** : Un clic pour titre Reddit (évite sélection manuelle)
 - **Bouton copie** : Un clic pour Explication + PS + "Happy learning!" (évite sélection manuelle)
 - **"Happy learning!" après PS** : Format optimal pour post Reddit commentaire
 - **Sélection manuelle subreddit** : Clic sur label → change PS, checkbox = tracking only

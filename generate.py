@@ -696,7 +696,10 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         <div class="subreddit-name" id="current-subreddit"></div>
 
         <!-- TITRE DU POST EN DEUXIÈME -->
-        <div class="post-title">Your daily vocab' workout 🏋️ #</div>
+        <div class="post-title" id="main-title">Learn French: what does "{expression}" mean here?</div>
+
+        <!-- BOUTON COPIER LE TITRE -->
+        <button class="copy-btn" id="copy-title-btn" style="margin: 0 20px 20px 20px;">📋 Copier le titre</button>
 
         <!-- SECTION 1: VERSION VISIBLE -->
         <div class="title">What does "{expression}" mean here?</div>
@@ -914,12 +917,41 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             }});
         }}
 
+        // Copier le titre dans le presse-papiers
+        function setupCopyTitleButton() {{
+            const copyTitleBtn = document.getElementById('copy-title-btn');
+            copyTitleBtn.addEventListener('click', async () => {{
+                const title = document.getElementById('main-title').textContent;
+
+                try {{
+                    await navigator.clipboard.writeText(title);
+
+                    // Feedback visuel
+                    const originalText = copyTitleBtn.textContent;
+                    copyTitleBtn.textContent = '✅ Copié !';
+                    copyTitleBtn.classList.add('copied');
+
+                    setTimeout(() => {{
+                        copyTitleBtn.textContent = originalText;
+                        copyTitleBtn.classList.remove('copied');
+                    }}, 2000);
+                }} catch (err) {{
+                    console.error('Erreur lors de la copie:', err);
+                    copyTitleBtn.textContent = '❌ Erreur';
+                    setTimeout(() => {{
+                        copyTitleBtn.textContent = '📋 Copier le titre';
+                    }}, 2000);
+                }}
+            }});
+        }}
+
         // Initialisation au chargement de la page
         document.addEventListener('DOMContentLoaded', () => {{
             const state = loadState();
             updateDisplay(state);
             setupContentEditableSaving();
             setupCopyButton();
+            setupCopyTitleButton();
         }});
     </script>
 </body>
