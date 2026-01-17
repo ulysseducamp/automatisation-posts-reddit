@@ -162,7 +162,7 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 ### Layout (ordre d'affichage)
 
 **Interface dynamique avec état persistant (localStorage) :**
-1. Nom subreddit dynamique (change selon label sélectionné)
+1. Lien subreddit cliquable (URL complète) + bouton "📋 Copier le lien"
 2. Titre post dynamique "Learn French: what does "[expression/mot]" mean here?" (Inter 32px gras)
 3. Bouton "📋 Copier le titre" pour copie rapide du titre Reddit
 4. Section 1 - Version visible (traductions éditables inline)
@@ -177,9 +177,10 @@ Exemples intégrés au prompt pour guidance (80% taux de succès)
 
 **Fonctionnalités JavaScript :**
 - Clé localStorage : `reddit-post-{expression}-{date}` (state: published[], selectedSubredditIndex, editedContent)
-- Clic label subreddit → Sélectionne (surlignage bleu) + Change nom + PS
+- Clic label subreddit → Sélectionne (surlignage bleu) + Change lien + PS
 - Checkbox → Toggle tracking visuel (indépendant de sélection)
 - Auto-sélection prochain non-coché si subreddit sélectionné coché
+- Bouton "📋 Copier le lien" copie URL subreddit (workflow fluide vers Reddit)
 - Bouton "📋 Copier le titre" copie le titre pour Reddit
 - Bouton "📋 Copier Explication + PS" copie : Explication + PS + "Happy learning!" avec feedback
 - Ordre subreddits fixe : FrenchImmersion → FrenchVocab → learnfrench → learningfrench
@@ -321,6 +322,11 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
   - Remplace ancien "Your daily vocab' workout 🏋️ #" (répétitif, non SEO)
   - Bouton "📋 Copier le titre" pour copie rapide vers Reddit
   - Améliore trouvabilité Google et référencement naturel des posts
+- **V22** : Workflow optimisé vers Reddit
+  - Lien subreddit cliquable (URL complète) au lieu du nom seul
+  - Bouton "📋 Copier le lien" pour copie directe de l'URL
+  - Suppression automatique des images sources après rognage (racine propre)
+  - Accès direct au subreddit sans manipulation manuelle d'URL
 
 ### Choix techniques importants
 - **OpenAI Vision (GPT-4o-mini)** : OCR précis vs Tesseract (sous-titres + titres films)
@@ -332,8 +338,10 @@ Le script s'arrête proprement avec des messages clairs dans ces cas :
 - **localStorage** : Persistance état sans serveur, clé unique expression+date
 - **contenteditable** : Édition inline native, UX simple
 - **Titre dynamique SEO** : Unique par expression/mot → indexation Google + trouvabilité
+- **Lien subreddit cliquable** : URL complète affichée + bouton copie → accès direct Reddit
 - **Bouton copie titre** : Un clic pour titre Reddit (évite sélection manuelle)
 - **Bouton copie** : Un clic pour Explication + PS + "Happy learning!" (évite sélection manuelle)
+- **Suppression auto images** : Images sources supprimées après rognage (racine propre)
 - **"Happy learning!" après PS** : Format optimal pour post Reddit commentaire
 - **Sélection manuelle subreddit** : Clic sur label → change PS, checkbox = tracking only
 - **Checkboxes togglables** : Correction erreurs possible (cochable/décochable)

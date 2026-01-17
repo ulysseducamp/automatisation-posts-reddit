@@ -464,7 +464,8 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
 
     # Convertir les listes Python en JSON pour JavaScript
     ps_json = json.dumps(ps_list)
-    subreddits_json = json.dumps([name for name, _ in subreddits])
+    subreddits_json = json.dumps([name for name, _, __ in subreddits])
+    subreddits_urls_json = json.dumps([url for _, __, url in subreddits])
 
     html_template = f"""<!DOCTYPE html>
 <html lang="en">
@@ -565,11 +566,45 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             white-space: pre-wrap;
         }}
 
-        .subreddit-name {{
+        .subreddit-container {{
+            padding: 0 20px 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+
+        .subreddit-link {{
             font-family: 'Inter', sans-serif;
             font-size: 16px;
-            color: #000000;
-            padding: 0 20px 10px 20px;
+            color: #1976D2;
+            text-decoration: none;
+            flex-grow: 1;
+        }}
+
+        .subreddit-link:hover {{
+            text-decoration: underline;
+        }}
+
+        .copy-link-btn {{
+            background-color: #1976D2;
+            color: white;
+            padding: 6px 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+        }}
+
+        .copy-link-btn:hover {{
+            background-color: #1565C0;
+        }}
+
+        .copy-link-btn.copied {{
+            background-color: #4CAF50;
         }}
 
         .tracker {{
@@ -692,8 +727,11 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
 </head>
 <body>
     <div class="wrapper">
-        <!-- NOM DU SUBREDDIT EN PREMIER -->
-        <div class="subreddit-name" id="current-subreddit"></div>
+        <!-- LIEN DU SUBREDDIT EN PREMIER -->
+        <div class="subreddit-container">
+            <a href="#" class="subreddit-link" id="current-subreddit-link" target="_blank"></a>
+            <button class="copy-link-btn" id="copy-subreddit-link-btn">📋 Copier le lien</button>
+        </div>
 
         <!-- TITRE DU POST EN DEUXIÈME -->
         <div class="post-title" id="main-title">Learn French: what does "{expression}" mean here?</div>
@@ -757,6 +795,7 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         const EXPRESSION = "{expression}";
         const DATE = "{date_str}";
         const SUBREDDITS = {subreddits_json};
+        const SUBREDDITS_URLS = {subreddits_urls_json};
         const PS_VARIATIONS = {ps_json};
         const STORAGE_KEY = `reddit-post-${{EXPRESSION}}-${{DATE}}`;
 
@@ -803,8 +842,10 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
 
             const selectedIndex = state.selectedSubredditIndex;
 
-            // Mettre à jour le nom du subreddit
-            document.getElementById('current-subreddit').textContent = SUBREDDITS[selectedIndex];
+            // Mettre à jour le lien du subreddit
+            const subredditLink = document.getElementById('current-subreddit-link');
+            subredditLink.textContent = SUBREDDITS_URLS[selectedIndex];
+            subredditLink.href = SUBREDDITS_URLS[selectedIndex];
 
             // Mettre à jour le PS
             document.getElementById('ps-text').textContent = PS_VARIATIONS[selectedIndex];
@@ -945,6 +986,36 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             }});
         }}
 
+        // Copier le lien du subreddit dans le presse-papiers
+        function setupCopySubredditLinkButton() {{
+            const copySubredditLinkBtn = document.getElementById('copy-subreddit-link-btn');
+            copySubredditLinkBtn.addEventListener('click', async () => {{
+                const state = loadState();
+                const selectedIndex = state.selectedSubredditIndex;
+                const subredditUrl = SUBREDDITS_URLS[selectedIndex];
+
+                try {{
+                    await navigator.clipboard.writeText(subredditUrl);
+
+                    // Feedback visuel
+                    const originalText = copySubredditLinkBtn.textContent;
+                    copySubredditLinkBtn.textContent = '✅ Copié !';
+                    copySubredditLinkBtn.classList.add('copied');
+
+                    setTimeout(() => {{
+                        copySubredditLinkBtn.textContent = originalText;
+                        copySubredditLinkBtn.classList.remove('copied');
+                    }}, 2000);
+                }} catch (err) {{
+                    console.error('Erreur lors de la copie:', err);
+                    copySubredditLinkBtn.textContent = '❌ Erreur';
+                    setTimeout(() => {{
+                        copySubredditLinkBtn.textContent = '📋 Copier le lien';
+                    }}, 2000);
+                }}
+            }});
+        }}
+
         // Initialisation au chargement de la page
         document.addEventListener('DOMContentLoaded', () => {{
             const state = loadState();
@@ -952,6 +1023,7 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             setupContentEditableSaving();
             setupCopyButton();
             setupCopyTitleButton();
+            setupCopySubredditLinkButton();
         }});
     </script>
 </body>
@@ -1034,10 +1106,10 @@ def main():
 
     # Liste des subreddits (ordre fixe comme demandé)
     subreddits = [
-        ("r/FrenchImmersion", "r-frenchimmersion"),
-        ("r/FrenchVocab", "r-frenchvocab"),
-        ("r/learnfrench", "r-learnfrench"),
-        ("r/learningfrench", "r-learningfrench")
+        ("r/FrenchImmersion", "r-frenchimmersion", "https://www.reddit.com/r/FrenchImmersion/"),
+        ("r/FrenchVocab", "r-frenchvocab", "https://www.reddit.com/r/FrenchVocab/"),
+        ("r/learnfrench", "r-learnfrench", "https://www.reddit.com/r/learnfrench/"),
+        ("r/learningfrench", "r-learningfrench", "https://www.reddit.com/r/learningfrench/")
     ]
 
     # Générer le slug et la date pour les noms de fichiers
@@ -1053,10 +1125,16 @@ def main():
     crop_image_bottom(args.image2, image2_new_name, pixels_to_remove=40)
     print(f"✓ Images rognées et sauvegardées dans img/")
 
+    # Supprimer les images sources (plus nécessaires)
+    print(f"⏳ Suppression des images sources...")
+    os.remove(args.image1)
+    os.remove(args.image2)
+    print(f"✓ Images sources supprimées")
+
     # Créer 4 liens raccourcis (un par subreddit)
     print(f"⏳ Création des liens raccourcis...")
     short_links = []
-    for i, (subreddit_display, _) in enumerate(subreddits):
+    for i, (subreddit_display, _, __) in enumerate(subreddits):
         link_title = f"{text} - {subreddit_display}"
         short_link = create_short_link(link_title)
 
