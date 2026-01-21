@@ -627,34 +627,66 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             margin-bottom: 10px;
             font-family: 'Inter', sans-serif;
             font-size: 16px;
+            gap: 10px;
         }}
 
         .tracker-item input[type="checkbox"] {{
-            margin-right: 10px;
+            margin-right: 0;
             width: 18px;
             height: 18px;
             cursor: pointer;
+            flex-shrink: 0;
         }}
 
-        .tracker-item label {{
+        .tracker-item .label-container {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-grow: 1;
+        }}
+
+        .tracker-item .label-text {{
             cursor: pointer;
             padding: 8px 12px;
-            margin: -8px -12px;
             border-radius: 6px;
             border-left: 4px solid transparent;
             transition: all 0.2s ease;
-            display: inline-block;
+            flex-grow: 1;
+            outline: 2px dashed transparent;
         }}
 
-        .tracker-item label:hover {{
+        .tracker-item .label-text:hover {{
             background-color: #f5f5f5;
         }}
 
-        .tracker-item label.selected {{
+        .tracker-item .label-text.selected {{
             background-color: #E3F2FD;
             border-left-color: #1976D2;
             color: #1976D2;
             font-weight: 500;
+        }}
+
+        .tracker-item .label-text[contenteditable="true"]:focus {{
+            outline: 2px dashed #1976D2;
+            background-color: #FFF9C4;
+            cursor: text;
+        }}
+
+        .tracker-item .edit-btn {{
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+            opacity: 0.6;
+        }}
+
+        .tracker-item .edit-btn:hover {{
+            background-color: #e0e0e0;
+            opacity: 1;
         }}
 
         [contenteditable="true"] {{
@@ -862,26 +894,92 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
                 checkbox.type = 'checkbox';
                 checkbox.id = `checkbox-${{index}}`;
                 checkbox.checked = state.published[index];
-                // Permettre de décocher (ne plus désactiver)
                 checkbox.addEventListener('change', () => handleCheckboxChange(index));
 
-                const label = document.createElement('label');
-                label.htmlFor = `checkbox-${{index}}`;
-                label.textContent = subreddit;
+                // Conteneur pour le label et le bouton d'édition
+                const labelContainer = document.createElement('div');
+                labelContainer.className = 'label-container';
+
+                // Texte du label (span au lieu de label)
+                const labelText = document.createElement('span');
+                labelText.id = `tracker-label-${{index}}`;
+                labelText.className = 'label-text';
+                labelText.contentEditable = 'true';
+
+                // Restaurer le texte édité ou utiliser le nom du subreddit par défaut
+                if (state.editedContent && state.editedContent[`tracker-label-${{index}}`]) {{
+                    labelText.textContent = state.editedContent[`tracker-label-${{index}}`];
+                }} else {{
+                    labelText.textContent = subreddit;
+                }}
 
                 // Ajouter la classe selected si c'est le subreddit actuellement sélectionné
                 if (index === selectedIndex) {{
-                    label.classList.add('selected');
+                    labelText.classList.add('selected');
                 }}
 
-                // Rendre le label cliquable pour sélectionner le subreddit
-                label.addEventListener('click', (e) => {{
+                // Clic sur le texte = sélection du subreddit
+                labelText.addEventListener('click', (e) => {{
+                    // Ne pas sélectionner si on est en train d'éditer
+                    if (document.activeElement === labelText) {{
+                        return;
+                    }}
                     e.preventDefault();
                     selectSubreddit(index);
                 }});
 
+                // Désactiver l'édition par défaut (on utilisera le bouton crayon)
+                labelText.addEventListener('focus', (e) => {{
+                    // Si focus sans avoir cliqué sur le bouton édition, annuler
+                    if (!labelText.dataset.editing) {{
+                        labelText.blur();
+                    }}
+                }});
+
+                // Sauvegarder les modifications quand on quitte l'édition
+                labelText.addEventListener('blur', () => {{
+                    delete labelText.dataset.editing;
+                    const state = loadState();
+                    if (!state.editedContent) {{
+                        state.editedContent = {{}};
+                    }}
+                    state.editedContent[`tracker-label-${{index}}`] = labelText.textContent;
+                    saveState(state);
+                }});
+
+                // Entrée = terminer l'édition
+                labelText.addEventListener('keydown', (e) => {{
+                    if (e.key === 'Enter') {{
+                        e.preventDefault();
+                        labelText.blur();
+                    }}
+                }});
+
+                // Bouton d'édition (crayon)
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-btn';
+                editBtn.textContent = '✏️';
+                editBtn.title = 'Éditer';
+
+                // Clic sur le crayon = activer l'édition
+                editBtn.addEventListener('click', (e) => {{
+                    e.preventDefault();
+                    e.stopPropagation();
+                    labelText.dataset.editing = 'true';
+                    labelText.focus();
+                    // Sélectionner tout le texte
+                    const range = document.createRange();
+                    range.selectNodeContents(labelText);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }});
+
+                labelContainer.appendChild(labelText);
+                labelContainer.appendChild(editBtn);
+
                 item.appendChild(checkbox);
-                item.appendChild(label);
+                item.appendChild(labelContainer);
                 trackerList.appendChild(item);
             }});
 
