@@ -753,7 +753,18 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             font-family: 'Fira Mono', monospace;
             font-size: 8px;
             font-weight: 400;
-            pointer-events: none;
+            cursor: text;
+            transition: background-color 0.2s, outline 0.2s;
+        }}
+
+        .movie-title-overlay:hover {{
+            background-color: #424242;
+            outline: 1px dashed #1976D2;
+        }}
+
+        .movie-title-overlay:focus {{
+            background-color: #616161;
+            outline: 2px solid #1976D2;
         }}
     </style>
 </head>
@@ -776,12 +787,12 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         <div class="container">
             <div class="image-container">
                 <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
-                <div class="movie-title-overlay">{movie_title1}</div>
+                <div class="movie-title-overlay" contenteditable="true" id="movie-title1-visible">{movie_title1}</div>
             </div>
             <div class="translation-box" contenteditable="true" id="translation1-visible">{translation1_visible}</div>
             <div class="image-container">
                 <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
-                <div class="movie-title-overlay">{movie_title2}</div>
+                <div class="movie-title-overlay" contenteditable="true" id="movie-title2-visible">{movie_title2}</div>
             </div>
             <div class="translation-box" contenteditable="true" id="translation2-visible">{translation2_visible}</div>
             <div class="footer">(Open the post to reveal the explanation)</div>
@@ -792,12 +803,12 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         <div class="container">
             <div class="image-container">
                 <img src="{image1_path}" alt="Screenshot 1" class="screenshot">
-                <div class="movie-title-overlay">{movie_title1}</div>
+                <div class="movie-title-overlay" contenteditable="true" id="movie-title1-hidden">{movie_title1}</div>
             </div>
             <div class="translation-box" contenteditable="true" id="translation1-hidden">{translation1_hidden}</div>
             <div class="image-container">
                 <img src="{image2_path}" alt="Screenshot 2" class="screenshot">
-                <div class="movie-title-overlay">{movie_title2}</div>
+                <div class="movie-title-overlay" contenteditable="true" id="movie-title2-hidden">{movie_title2}</div>
             </div>
             <div class="translation-box" contenteditable="true" id="translation2-hidden">{translation2_hidden}</div>
             <div class="footer">(Open the post to reveal the explanation)</div>
@@ -1026,6 +1037,48 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             }});
         }}
 
+        // Synchroniser les overlays de titres de films entre sections visible/cachée
+        function setupMovieTitleSync() {{
+            const movieTitles = [
+                {{
+                    visible: document.getElementById('movie-title1-visible'),
+                    hidden: document.getElementById('movie-title1-hidden')
+                }},
+                {{
+                    visible: document.getElementById('movie-title2-visible'),
+                    hidden: document.getElementById('movie-title2-hidden')
+                }}
+            ];
+
+            movieTitles.forEach(({{visible, hidden}}) => {{
+                // Quand on modifie le visible, synchroniser le caché
+                visible.addEventListener('input', () => {{
+                    hidden.textContent = visible.textContent;
+                    // Sauvegarder dans localStorage
+                    const state = loadState();
+                    if (!state.editedContent) {{
+                        state.editedContent = {{}};
+                    }}
+                    state.editedContent[visible.id] = visible.textContent;
+                    state.editedContent[hidden.id] = visible.textContent;
+                    saveState(state);
+                }});
+
+                // Quand on modifie le caché, synchroniser le visible
+                hidden.addEventListener('input', () => {{
+                    visible.textContent = hidden.textContent;
+                    // Sauvegarder dans localStorage
+                    const state = loadState();
+                    if (!state.editedContent) {{
+                        state.editedContent = {{}};
+                    }}
+                    state.editedContent[visible.id] = hidden.textContent;
+                    state.editedContent[hidden.id] = hidden.textContent;
+                    saveState(state);
+                }});
+            }});
+        }}
+
         // Copier l'explication + PS + Happy learning! dans le presse-papiers
         function setupCopyButton() {{
             const copyBtn = document.getElementById('copy-btn');
@@ -1119,6 +1172,7 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             const state = loadState();
             updateDisplay(state);
             setupContentEditableSaving();
+            setupMovieTitleSync();
             setupCopyButton();
             setupCopyTitleButton();
             setupCopySubredditLinkButton();
