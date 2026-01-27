@@ -2,7 +2,9 @@
 
 ## Vue d'ensemble
 
-Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentissage du français. Il utilise l'API OpenAI pour extraire le texte des images (OCR), traduire les sous-titres et générer des explications pédagogiques.
+Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentissage du français :
+- **Vocabulaire** (`generate.py`) : Posts avec captures d'écran de films/séries
+- **Grammaire** (`generate_grammar.py`) : Quiz grammaticaux générés par IA
 
 ## Architecture
 
@@ -55,8 +57,8 @@ Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentiss
 
 ## Fichiers du projet
 
-### `generate.py`
-Script principal contenant toute la logique :
+### `generate.py` (Vocabulaire)
+Script posts vocabulaire avec captures d'écran :
 
 **Fonctions principales :**
 - `slugify(text)` : Convertit texte en slug pour noms de fichiers
@@ -72,6 +74,30 @@ Script principal contenant toute la logique :
 - `create_short_link(title)` : Crée lien raccourci via API Ablink
 - `generate_html(...)` : Crée HTML dynamique avec overlays titres films, JavaScript, localStorage
 - `main()` : Orchestration complète (génère 1 fichier unique)
+
+### `generate_grammar.py` (Grammaire)
+Script posts grammaire avec quiz interactif :
+
+**Workflow** :
+1. Propose règle de grammaire aléatoire (GPT-4o, temp=1.2)
+2. Génère 3 options (1 correcte, 2 incorrectes)
+3. Chat interactif : validation/modification de la description
+4. Génère HTML avec image quiz unique (540x540px)
+
+**Fonctions principales** :
+- `propose_grammar_rule()` : Génère règle + 3 options via GPT-4o
+- `generate_explanation(rule_data)` : Explication pédagogique (GPT-4o-mini)
+- `modify_explanation(explanation, instruction)` : Itération sur description
+- `create_short_link(title, test_mode)` : Liens Ablink (skip si --test)
+- `generate_html(rule_data, explanation, test_mode)` : HTML avec tracker 4 subreddits
+
+**Commandes** :
+```bash
+python3 generate_grammar.py          # Mode normal (crée liens Ablink)
+python3 generate_grammar.py --test   # Mode test (liens factices)
+```
+
+**Subreddits** : FrenchImmersion, FrenchGrammar, learnfrench, learningfrench
 
 ### `requirements.txt`
 Dépendances Python :
@@ -96,8 +122,13 @@ Documentation utilisateur avec instructions d'installation et d'utilisation.
 ## Configuration OpenAI
 
 ### Modèles utilisés
+**Vocabulaire (`generate.py`)** :
 - **GPT-4o-mini** : OCR, traduction, explication (économique)
 - **GPT-4o** : Cachage des traductions (précision requise)
+
+**Grammaire (`generate_grammar.py`)** :
+- **GPT-4o** : Génération règles (variété + créativité, temp=1.2)
+- **GPT-4o-mini** : Explications pédagogiques (temp=0)
 
 ### Prompts système
 
@@ -195,50 +226,47 @@ Chargées via Google Fonts.
 
 ### Installation
 ```bash
-# Installer les dépendances
 pip3 install -r requirements.txt
-
-# Configurer la clé API
 cp .env.example .env
-# Éditer .env et ajouter la vraie clé OpenAI
+# Éditer .env : OPENAI_API_KEY + ABLINK_API_KEY
 ```
 
-### Commande
+### Vocabulaire (generate.py)
 
-**Pour une expression :**
+**Expression :**
 ```bash
-python3 generate.py \
-  --expression "en déplacement" \
-  --image1 scene1.png \
-  --image2 scene2.png
+python3 generate.py --expression "en déplacement" --image1 scene1.png --image2 scene2.png
 ```
 
-**Pour un mot :**
+**Mot :**
 ```bash
-python3 generate.py \
-  --mot "manger" \
-  --image1 scene1.png \
-  --image2 scene2.png
+python3 generate.py --mot "manger" --image1 scene1.png --image2 scene2.png
 ```
 
-**Note :** Les arguments `--expression` et `--mot` sont mutuellement exclusifs (il faut utiliser l'un OU l'autre).
+### Grammaire (generate_grammar.py)
+
+**Mode normal :**
+```bash
+python3 generate_grammar.py
+# Chat interactif : propose règles → valide → génère HTML
+# Output : posts/grammar/{rule}-{date}.html
+```
+
+**Mode test (sans liens Ablink) :**
+```bash
+python3 generate_grammar.py --test
+```
 
 ### Output
-**1 fichier HTML** dans `posts/`, format : `posts/{text-slug}-{date}.html`
 
-Exemple pour `--expression "en déplacement"` :
-- `posts/en-deplacement-2026-01-03.html`
+**Vocabulaire** :
+- `posts/{expression}-{date}.html`
+- `img/{expression}-{date}-scene1.png` (40px enlevés)
+- Interface : 2 sections (visible/cachée), tracker 4 subreddits
 
-**Images rognées** dans `img/` :
-- `img/en-deplacement-2026-01-03-scene1.png` (40px enlevés du bas)
-- `img/en-deplacement-2026-01-03-scene2.png` (40px enlevés du bas)
-
-Le fichier HTML contient :
-- Interface dynamique pour gérer 4 publications (1 par subreddit)
-- Zones éditables : traductions visibles, cachées, explication
-- Overlays titres films (coin haut-droit, auto-extraits via OCR)
-- Bouton copie rapide Explication + PS
-- État sauvegardé dans localStorage du navigateur
+**Grammaire** :
+- `posts/grammar/{rule}-{date}.html`
+- Interface : 1 image quiz (540x540px, 3 options centrées), tracker 4 subreddits
 
 ## Gestion d'erreurs
 
