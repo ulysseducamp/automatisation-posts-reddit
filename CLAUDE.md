@@ -5,6 +5,7 @@
 Ce projet génère automatiquement des posts Reddit éducatifs pour l'apprentissage du français :
 - **Vocabulaire** (`generate.py`) : Posts avec captures d'écran de films/séries
 - **Grammaire** (`generate_grammar.py`) : Quiz grammaticaux générés par IA
+- **Humour** (`generate_humor.py`) : Mèmes français avec explications pédagogiques
 
 ## Architecture
 
@@ -99,6 +100,31 @@ python3 generate_grammar.py --test   # Mode test (liens factices)
 
 **Subreddits** : FrenchImmersion, FrenchGrammar, learnfrench, learningfrench
 
+### `generate_humor.py` (Humour)
+Script posts humour avec mèmes français :
+
+**Workflow** :
+1. Analyse image mème (GPT-4o Vision)
+2. Génère description : Translation, Why is this funny, Vocabulary (optionnel), Context (optionnel)
+3. Chat interactif : validation/modification
+4. Génère HTML avec image + description éditable
+
+**Fonctions principales** :
+- `analyze_meme(image_path)` : Analyse mème via GPT-4o Vision
+- `modify_description(description, instruction)` : Modification interactive
+- `create_short_link(title, test_mode)` : Liens Ablink (skip si --test)
+- `generate_html(description, image_filename, date_str, title_slug, title_display, test_mode)` : HTML tracker 3 subreddits
+
+**Commandes** :
+```bash
+python3 generate_humor.py --image meme.png          # Mode normal
+python3 generate_humor.py --image meme.png --test   # Mode test
+```
+
+**Subreddits** : FrenchImmersion, learnfrench, learningfrench
+
+**Format description** : Titres en **gras** (markdown), max-width 700px, titre auto-rempli
+
 ### `requirements.txt`
 Dépendances Python :
 - `openai>=1.0.0` : SDK OpenAI pour Vision API et traductions
@@ -129,6 +155,9 @@ Documentation utilisateur avec instructions d'installation et d'utilisation.
 **Grammaire (`generate_grammar.py`)** :
 - **GPT-4o** : Génération règles (variété + créativité, temp=1.2)
 - **GPT-4o-mini** : Explications pédagogiques (temp=0)
+
+**Humour (`generate_humor.py`)** :
+- **GPT-4o** : Analyse mème Vision + génération description (temp=0)
 
 ### Prompts système
 
@@ -257,6 +286,20 @@ python3 generate_grammar.py
 python3 generate_grammar.py --test
 ```
 
+### Humour (generate_humor.py)
+
+**Mode normal :**
+```bash
+python3 generate_humor.py --image meme.png
+# Analyse image → valide/modifie → saisit titre → génère HTML
+# Output : posts/humor/{titre}-{date}.html + img/humor/{titre}-{date}.png
+```
+
+**Mode test :**
+```bash
+python3 generate_humor.py --image meme.png --test
+```
+
 ### Output
 
 **Vocabulaire** :
@@ -267,6 +310,11 @@ python3 generate_grammar.py --test
 **Grammaire** :
 - `posts/grammar/{rule}-{date}.html`
 - Interface : 1 image quiz (540x540px, 3 options centrées), tracker 4 subreddits
+
+**Humour** :
+- `posts/humor/{titre}-{date}.html`
+- `img/humor/{titre}-{date}.png`
+- Interface : 1 image mème, description éditable, tracker 3 subreddits (max-width 700px)
 
 ## Gestion d'erreurs
 
