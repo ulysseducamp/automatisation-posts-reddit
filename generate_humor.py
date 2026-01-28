@@ -196,22 +196,23 @@ def convert_ps_to_markdown_link(ps_text, link_url):
 
 
 def generate_html(description, image_filename, date_str, title_slug, title_display, test_mode=False):
-    """Génère le HTML avec image + description éditable + tracker 3 subreddits"""
+    """Génère le HTML avec image + description éditable + tracker 4 subreddits"""
 
-    # Sélectionner 3 PS aléatoires différents
-    ps_list = random.sample(PS_VARIATIONS, 3)
+    # Sélectionner 4 PS aléatoires différents
+    ps_list = random.sample(PS_VARIATIONS, 4)
 
-    # Subreddits pour humor (sans FrenchVocab)
+    # Subreddits pour humor
     subreddits = [
         ("r/FrenchImmersion", "r-frenchimmersion", "https://www.reddit.com/r/FrenchImmersion/"),
         ("r/learnfrench", "r-learnfrench", "https://www.reddit.com/r/learnfrench/"),
-        ("r/learningfrench", "r-learningfrench", "https://www.reddit.com/r/learningfrench/")
+        ("r/learningfrench", "r-learningfrench", "https://www.reddit.com/r/learningfrench/"),
+        ("r/LearnFrenchWithHumor", "r-learnfrenchwithhumor", "https://www.reddit.com/r/LearnFrenchWithHumor/")
     ]
 
-    # Créer 3 liens raccourcis
+    # Créer 4 liens raccourcis
     if test_mode:
         print(f"\n🧪 Mode test : liens Ablink non créés (liens factices)")
-        short_links = ["https://ablink.io/test-link"] * 3
+        short_links = ["https://ablink.io/test-link"] * 4
     else:
         print(f"\n⏳ Création des liens raccourcis...")
         short_links = []
@@ -229,7 +230,7 @@ def generate_html(description, image_filename, date_str, title_slug, title_displ
     # Convertir PS en Markdown avec liens
     ps_list_with_links = [
         convert_ps_to_markdown_link(ps_list[i], short_links[i])
-        for i in range(3)
+        for i in range(4)
     ]
 
     # Convertir en JSON pour JavaScript
@@ -544,7 +545,7 @@ def generate_html(description, image_filename, date_str, title_slug, title_displ
 
         // État par défaut
         const DEFAULT_STATE = {{
-            published: [false, false, false],
+            published: [false, false, false, false],
             selectedSubredditIndex: 0,
             editedContent: {{}}
         }};
