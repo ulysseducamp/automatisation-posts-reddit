@@ -100,6 +100,8 @@ python3 generate_grammar.py --test   # Mode test (liens factices)
 
 **Subreddits** : FrenchImmersion, FrenchGrammar, learnfrench, learningfrench
 
+**Format** : max-width 700px, message promo subreddit automatique (PS/PS-2)
+
 ### `generate_humor.py` (Humour)
 Script posts humour avec mèmes français :
 
@@ -113,7 +115,7 @@ Script posts humour avec mèmes français :
 - `analyze_meme(image_path)` : Analyse mème via GPT-4o Vision
 - `modify_description(description, instruction)` : Modification interactive
 - `create_short_link(title, test_mode)` : Liens Ablink (skip si --test)
-- `generate_html(description, image_filename, date_str, title_slug, title_display, test_mode)` : HTML tracker 3 subreddits
+- `generate_html(description, image_filename, date_str, title_slug, title_display, test_mode)` : HTML tracker 4 subreddits
 
 **Commandes** :
 ```bash
@@ -121,9 +123,9 @@ python3 generate_humor.py --image meme.png          # Mode normal
 python3 generate_humor.py --image meme.png --test   # Mode test
 ```
 
-**Subreddits** : FrenchImmersion, learnfrench, learningfrench
+**Subreddits** : FrenchImmersion, learnfrench, learningfrench, LearnFrenchWithHumor
 
-**Format description** : Titres en **gras** (markdown), max-width 700px, titre auto-rempli
+**Format** : Titres en **gras** (markdown), max-width 700px, titre auto-rempli, message promo subreddit automatique (PS/PS-2)
 
 ### `requirements.txt`
 Dépendances Python :
@@ -309,12 +311,12 @@ python3 generate_humor.py --image meme.png --test
 
 **Grammaire** :
 - `posts/grammar/{rule}-{date}.html`
-- Interface : 1 image quiz (540x540px, 3 options centrées), tracker 4 subreddits
+- Interface : 1 image quiz (540x540px, 3 options centrées), tracker 4 subreddits, promo r/FrenchGrammar, max-width 700px
 
 **Humour** :
 - `posts/humor/{titre}-{date}.html`
 - `img/humor/{titre}-{date}.png`
-- Interface : 1 image mème, description éditable, tracker 3 subreddits (max-width 700px)
+- Interface : 1 image mème, description éditable, tracker 4 subreddits, promo r/LearnFrenchWithHumor, max-width 700px
 
 ## Gestion d'erreurs
 

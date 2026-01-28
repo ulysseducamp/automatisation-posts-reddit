@@ -296,7 +296,7 @@ def generate_html(rule_data, explanation, date_str, test_mode=False):
         }}
 
         .wrapper {{
-            max-width: 1200px;
+            max-width: 700px;
             margin: 0 auto;
         }}
 
@@ -583,6 +583,9 @@ def generate_html(rule_data, explanation, date_str, test_mode=False):
         <!-- PS (dynamique) -->
         <div class="explanation" id="ps-text"></div>
 
+        <!-- PROMO SUBREDDIT -->
+        <div class="explanation" id="ps-subreddit"></div>
+
         <!-- SIGNATURE -->
         <div class="explanation">Happy learning!</div>
 
@@ -652,7 +655,12 @@ def generate_html(rule_data, explanation, date_str, test_mode=False):
             subredditLink.href = SUBREDDITS_URLS[selectedIndex];
 
             // Mettre à jour le PS
-            document.getElementById('ps-text').textContent = PS_VARIATIONS[selectedIndex];
+            const psText = PS_VARIATIONS[selectedIndex];
+            document.getElementById('ps-text').textContent = psText;
+
+            // Mettre à jour le PS promo subreddit
+            const psPrefix = psText.startsWith('PS:') ? 'PS-2:' : 'PS:';
+            document.getElementById('ps-subreddit').textContent = `${{psPrefix}} More posts like this on r/FrenchGrammar`;
 
             // Créer/mettre à jour les checkboxes
             const trackerList = document.getElementById('tracker-list');
@@ -787,7 +795,8 @@ def generate_html(rule_data, explanation, date_str, test_mode=False):
             copyBtn.addEventListener('click', async () => {{
                 const explanation = document.getElementById('explanation').textContent;
                 const ps = document.getElementById('ps-text').textContent;
-                const textToCopy = explanation + '\\n\\n' + ps + '\\n\\nHappy learning!';
+                const psSubreddit = document.getElementById('ps-subreddit').textContent;
+                const textToCopy = explanation + '\\n\\n' + ps + '\\n\\n' + psSubreddit + '\\n\\nHappy learning!';
 
                 try {{
                     await navigator.clipboard.writeText(textToCopy);
