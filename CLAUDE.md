@@ -76,6 +76,8 @@ Script posts vocabulaire avec captures d'écran :
 - `generate_html(...)` : Crée HTML dynamique avec overlays titres films, JavaScript, localStorage
 - `main()` : Orchestration complète (génère 1 fichier unique)
 
+**Format** : Message promo subreddit automatique r/FrenchVocab (PS/PS-2)
+
 ### `generate_grammar.py` (Grammaire)
 Script posts grammaire avec quiz interactif :
 
@@ -307,7 +309,7 @@ python3 generate_humor.py --image meme.png --test
 **Vocabulaire** :
 - `posts/{expression}-{date}.html`
 - `img/{expression}-{date}-scene1.png` (40px enlevés)
-- Interface : 2 sections (visible/cachée), tracker 4 subreddits
+- Interface : 2 sections (visible/cachée), tracker 4 subreddits, promo r/FrenchVocab
 
 **Grammaire** :
 - `posts/grammar/{rule}-{date}.html`

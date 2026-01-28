@@ -809,6 +809,9 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
         <!-- PS (dynamique) -->
         <div class="explanation" id="ps-text"></div>
 
+        <!-- PROMO SUBREDDIT -->
+        <div class="explanation" id="ps-subreddit"></div>
+
         <!-- SIGNATURE -->
         <div class="explanation">Happy learning!</div>
 
@@ -880,7 +883,12 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             subredditLink.href = SUBREDDITS_URLS[selectedIndex];
 
             // Mettre à jour le PS
-            document.getElementById('ps-text').textContent = PS_VARIATIONS[selectedIndex];
+            const psText = PS_VARIATIONS[selectedIndex];
+            document.getElementById('ps-text').textContent = psText;
+
+            // Mettre à jour le PS promo subreddit
+            const psPrefix = psText.startsWith('PS:') ? 'PS-2:' : 'PS:';
+            document.getElementById('ps-subreddit').textContent = `${{psPrefix}} More posts like this on r/FrenchVocab`;
 
             // Créer/mettre à jour les checkboxes
             const trackerList = document.getElementById('tracker-list');
@@ -1032,7 +1040,8 @@ def generate_html(expression, date_str, image1_path, translation1_visible, trans
             copyBtn.addEventListener('click', async () => {{
                 const explanation = document.getElementById('explanation').textContent;
                 const ps = document.getElementById('ps-text').textContent;
-                const textToCopy = explanation + '\\n\\n' + ps + '\\n\\nHappy learning!';
+                const psSubreddit = document.getElementById('ps-subreddit').textContent;
+                const textToCopy = explanation + '\\n\\n' + ps + '\\n\\n' + psSubreddit + '\\n\\nHappy learning!';
 
                 try {{
                     await navigator.clipboard.writeText(textToCopy);
